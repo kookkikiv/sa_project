@@ -9,7 +9,7 @@ type Event struct {
 	Name 	string
 
 	LocationID	*uint
-	Location	Location `gorm:"foreignkey:EventID"`
+	Location	Location `gorm:"foreignkey:LocationID"`
 
 	Pac_Event []Pac_Event `gorm:"foreignKey:EventID"`
 }
