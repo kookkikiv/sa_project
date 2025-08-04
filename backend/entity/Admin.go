@@ -1,0 +1,19 @@
+package entity
+
+import (
+	"gorm.io/gorm"
+	"time"
+)
+
+type Admin struct {
+	gorm.Model
+	Username 	string
+	Password 	string
+	Email		string
+	Fristname	string
+	Lastname	string
+	Birthday	time.Time
+	
+	Accommodation []Accommodation `gorm:"foreignKey:AccommodationID"`
+	Package []Package `gorm:"foreignKey:PackageID"`
+}
