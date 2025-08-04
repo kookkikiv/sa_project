@@ -9,6 +9,6 @@ type Guide struct {
 	Name 	string
 	Gender 	string
 	
-	Package []Package `gorm:"foreignKey:PackageID"`
+	Package []Package `gorm:"foreignKey:GuideID"`
 	
 }

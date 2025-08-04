@@ -16,6 +16,6 @@ type Room struct {
 	AccommodationID	*uint
 	Accommodation	Accommodation `gorm:"foreignkey:AccommodationID"`
 
-	Fac_Room []Fac_Room `gorm:"foreignKey:Fac_RoomID"`
+	Fac_Room []Fac_Room `gorm:"foreignKey:RoomID"`
 	
 }

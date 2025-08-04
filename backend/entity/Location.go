@@ -14,6 +14,6 @@ type Location struct{
 	Latitude	float64
 	Longitude	float64
 
-	Accommodation []Accommodation `gorm:"foreignKey:AccommodationID"`
-	Event []Event `gorm:"foreignKey:EventID"`
+	Accommodation []Accommodation `gorm:"foreignKey:LocationID"`
+	Event []Event `gorm:"foreignKey:LocationID"`
 }

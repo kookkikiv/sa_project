@@ -9,7 +9,7 @@ type Facility struct {
 	Name 	string
 	Type 	string
 	
-	Fac_Acc []Fac_Acc `gorm:"foreignKey:Fac_AccID"`
-	Fac_Room []Fac_Room `gorm:"foreignKey:Fac_RoomID"`
+	Fac_Acc []Fac_Acc `gorm:"foreignKey:FacilityID"`
+	Fac_Room []Fac_Room `gorm:"foreignKey:FacilityID"`
 
 }

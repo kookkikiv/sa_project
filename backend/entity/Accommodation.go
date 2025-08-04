@@ -15,5 +15,5 @@ type Accommodation struct {
 	Admin		Admin `gorm:"foreignkey:AdminID"`
 	
 	Room []Room `gorm:"foreignKey:AccommodationID"`
-	Fac_Acc []Fac_Acc `gorm:"foreignKey:Fac_AccID"`
+	Fac_Acc []Fac_Acc `gorm:"foreignKey:AccommodationID"`
 }

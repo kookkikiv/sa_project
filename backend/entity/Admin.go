@@ -14,6 +14,6 @@ type Admin struct {
 	Lastname	string
 	Birthday	time.Time
 	
-	Accommodation []Accommodation `gorm:"foreignKey:AccommodationID"`
-	Package []Package `gorm:"foreignKey:PackageID"`
+	Accommodation []Accommodation `gorm:"foreignKey:AdminID"`
+	Package []Package `gorm:"foreignKey:AdminID"`
 }
