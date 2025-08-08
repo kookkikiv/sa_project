@@ -17,14 +17,13 @@ export function AccDataUI() {
           backgroundColor: "#f0f0f0",
           padding: "20px",
           borderRight: "1px solid #ccc",
-          position: "fixed",      // ✅ ล็อกไว้ที่มุมซ้ายบน
+          position: "fixed",
           top: 0,
           left: 0,
-          height: "100vh",        // ✅ เต็มความสูงจอ
+          height: "100vh",
           zIndex: 1000
         }}
       >
-        
         <div style={{ textAlign: "center" }}>
           <img src={userlogo} alt="user" style={{ width: "80px", marginBottom: "10px" }} />
           <p>
@@ -51,8 +50,14 @@ export function AccDataUI() {
         </div>
       </div>
 
-      {/* Main Content */}
-      <div style={{ flex: 1, padding: "30px" }}>
+      {/* Main Content - เพิ่ม marginLeft */}
+      <div style={{ 
+        flex: 1, 
+        padding: "30px", 
+        marginLeft: "220px",
+        minHeight: "100vh",
+        boxSizing: "border-box"
+      }}>
         {selectedMenu === "back" && <SystemDataUI />}
         {selectedMenu === "accommodation" && <AccommodationUI />}
         {selectedMenu === "info" && <p>แสดงข้อมูลที่พัก</p>}
@@ -168,6 +173,7 @@ export function AccommodationUI() {
     </div>
   );
 }
+
 export function RoomUI() {
   
   const facilities = [
@@ -188,7 +194,7 @@ export function RoomUI() {
           display: "flex",
           justifyContent: "space-between",
           alignItems: "center",
-          marginBottom: "20px" // เพิ่มระยะห่างด้านล่าง
+          marginBottom: "20px"
       }}>
         <h2>จัดการข้อมูลห้องพัก</h2>
         <button
@@ -211,7 +217,7 @@ export function RoomUI() {
       {facilities.length > 0 ? (
         <table
           style={{
-            width: "100%", // ให้ตารางกว้างเต็มพื้นที่ของ Container
+            width: "100%",
             borderCollapse: "collapse",
             minHeight: "400px",
           }}
@@ -251,7 +257,6 @@ export function RoomUI() {
             justifyContent: "center",
             alignItems: "center",
             color: "#888",
-            width: "600px" // อาจจะลบ width ออกให้เป็นไปตาม container
           }}
         >
           ยังไม่มีข้อมูลในตาราง
@@ -281,7 +286,7 @@ export function FacilityUI() {
           display: "flex",
           justifyContent: "space-between",
           alignItems: "center",
-          marginBottom: "20px" // เพิ่มระยะห่างด้านล่าง
+          marginBottom: "20px"
       }}>
         <h2>จัดการข้อมูลสิ่งอำนวยความสะดวก</h2>
         <button
@@ -304,7 +309,7 @@ export function FacilityUI() {
       {facilities.length > 0 ? (
         <table
           style={{
-            width: "100%", // ให้ตารางกว้างเต็มพื้นที่ของ Container
+            width: "100%",
             borderCollapse: "collapse",
             minHeight: "400px",
           }}
@@ -338,7 +343,6 @@ export function FacilityUI() {
             justifyContent: "center",
             alignItems: "center",
             color: "#888",
-            width: "600px" // อาจจะลบ width ออกให้เป็นไปตาม container
           }}
         >
           ยังไม่มีข้อมูลในตาราง
@@ -347,4 +351,3 @@ export function FacilityUI() {
     </div>
   );
 }
-

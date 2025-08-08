@@ -17,14 +17,13 @@ export function SystemDataUI() {
           backgroundColor: "#f0f0f0",
           padding: "20px",
           borderRight: "1px solid #ccc",
-          position: "fixed",      // ✅ ล็อกไว้ที่มุมซ้ายบน
+          position: "fixed",
           top: 0,
           left: 0,
-          height: "100vh",        // ✅ เต็มความสูงจอ
+          height: "100vh",
           zIndex: 1000
         }}
       >
-        
         <div style={{ textAlign: "center" }}>
           <img src={userlogo} alt="user" style={{ width: "80px", marginBottom: "10px" }} />
           <p>
@@ -45,12 +44,17 @@ export function SystemDataUI() {
         </div>
       </div>
 
-      {/* Main Content */}
-      <div style={{ flex: 1, padding: "30px" }}>
+      {/* Main Content - เพิ่ม marginLeft */}
+      <div style={{ 
+        flex: 1, 
+        padding: "30px", 
+        marginLeft: "220px",
+        minHeight: "100vh",
+        boxSizing: "border-box"
+      }}>
         {selectedMenu === "Admin" && <p>แสดงข้อมูลadmin</p>}
         {selectedMenu === "accommodation" && <AccDataUI />}
         {selectedMenu === "package" && <PacDataUI />}
-        
       </div>
     </div>
   );

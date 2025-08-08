@@ -17,14 +17,13 @@ export function PacDataUI() {
           backgroundColor: "#f0f0f0",
           padding: "20px",
           borderRight: "1px solid #ccc",
-          position: "fixed",      // ✅ ล็อกไว้ที่มุมซ้ายบน
+          position: "fixed",
           top: 0,
           left: 0,
-          height: "100vh",        // ✅ เต็มความสูงจอ
+          height: "100vh",
           zIndex: 1000
         }}
       >
-        
         <div style={{ textAlign: "center" }}>
           <img src={userlogo} alt="user" style={{ width: "80px", marginBottom: "10px" }} />
           <p>
@@ -42,8 +41,14 @@ export function PacDataUI() {
         </div>
       </div>
 
-      {/* Main Content */}
-      <div style={{ flex: 1, padding: "30px" }}>
+      {/* Main Content - เพิ่ม marginLeft */}
+      <div style={{ 
+        flex: 1, 
+        padding: "30px", 
+        marginLeft: "220px",
+        minHeight: "100vh",
+        boxSizing: "border-box"
+      }}>
         {selectedMenu === "back" && <SystemDataUI />}
         {selectedMenu === "package" && <PackageUI />}
       </div>
@@ -66,7 +71,7 @@ export function PackageUI() {
           alignItems: "center",
           marginBottom: "20px"
         }}>
-          <h2>เพิ่มข้อมูลที่พัก</h2>
+          <h2>เพิ่มข้อมูลแพ็คเกจ</h2>
           <button
             onClick={() => setSelectedMenu("package")}
             style={{
@@ -148,7 +153,7 @@ export function PackageUI() {
           alignItems: "center",
           color: "#888",
         }}>
-          ไม่มีข้อมูลที่พัก
+          ไม่มีข้อมูลแพ็คเกจ
         </div>
       )}
     </div>
