@@ -20,45 +20,20 @@ func main() {
 		// router.Use(middlewares.Authorizes())
 		// {
 		// Member routes
-		router.GET("/members", controller.FindMembers)
-		router.GET("/member/:id", controller.FindMemberById)
-		router.DELETE("/member/:id", controller.DeleteMemberById)
 
-		// Creator routes
-		router.GET("/creators", controller.FindCreators)
-		router.GET("/creator/:id", controller.FindCreatorById)
-		router.DELETE("/creator/:id", controller.DeleteCreatorById)
+		// accommodation routes
+		router.GET("accommodation", controller.FindAccommodation)
+		router.GET("/accommodation/:id", controller.FindAccommodationId)
+		router.DELETE("/accommodation/:id", controller.DeleteAccommodayionById)
 
-		// Sound routes
-		router.POST("/new-sound", controller.CreateSound)
-		router.GET("/sounds", controller.FindSounds)
-		router.PUT("/sound/update", controller.UpdateSound)
-		router.GET("/sound/:id", controller.FindSoundById)
-		router.DELETE("/sound/:id", controller.DeleteSoundById)
+		// package routes
+		router.POST("/new-package", controller.CreatePackage)
+		router.GET("/package", controller.FindPackage)
+		router.PUT("/package/update", controller.UpdatePackage)
+		router.GET("/package/:id", controller.FindPackageById)
+		router.DELETE("/package/:id", controller.DeletePackageById)
 
-		// Rating routes
-		router.POST("/new-rating", controller.CreateRating)
-		router.POST("/ratings", controller.FindRatings)
 
-		// Playlist routes
-		router.POST("/new-playlist", controller.CreatePlaylist)
-		router.PUT("/playlist/update", controller.UpdatePlaylist)
-		router.GET("/playlists", controller.FindPlaylists)
-		router.GET("/playlist/:id", controller.FindPlaylistById)
-		router.DELETE("/playlist/:id", controller.DeletePlaylistById)
-
-		// List Sound in playlist routes
-		router.POST("/add-to-playlist", controller.AddToPlaylist)
-		router.POST("/remove-out-from-playlist/:sound_playlist", controller.AddToPlaylist)
-
-		// Histories routes
-		router.POST("/new-history", controller.CreateHistory)
-		router.GET("/histories", controller.FindHistories)
-		router.DELETE("/history/:id", controller.DeleteHistoryById)
-
-		// Sound Types
-		router.GET("/sound-types", controller.FindSoundTypes)
-		// }
 	}
 
 	// // Signup routes
