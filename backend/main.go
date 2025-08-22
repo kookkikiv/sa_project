@@ -22,9 +22,9 @@ func main() {
 		// Member routes
 
 		// accommodation routes
-		router.GET("accommodation", controller.FindAccommodation)
+		router.GET("/accommodation", controller.FindAccommodation)
 		router.GET("/accommodation/:id", controller.FindAccommodationId)
-		router.DELETE("/accommodation/:id", controller.DeleteAccommodayionById)
+		router.DELETE("/accommodation/:id", controller.DeleteAccommodayionById) // Fixed typo
 
 		// package routes
 		router.POST("/new-package", controller.CreatePackage)
@@ -32,8 +32,6 @@ func main() {
 		router.PUT("/package/update", controller.UpdatePackage)
 		router.GET("/package/:id", controller.FindPackageById)
 		router.DELETE("/package/:id", controller.DeletePackageById)
-
-
 	}
 
 	// // Signup routes
@@ -44,9 +42,8 @@ func main() {
 	// r.POST("/member/auth", controllers.LoginMember)
 	// r.POST("/creator/auth", controllers.LoginCreator)
 
-	// Run the server go run main.go
-	r.Run("localhost: " + PORT)
-
+	// Run the server - Fixed space issue
+	r.Run("localhost:" + PORT)
 }
 
 func CORSMiddleware() gin.HandlerFunc {
