@@ -8,11 +8,11 @@ type Location struct{
 	gorm.Model
 	Name		string
 	Type		string
-	City		string
+	Province	string
 	District	string
 	Subdistrict	string
-	Latitude	float64
-	Longitude	float64
+	ZipCode		string
+
 
 	Accommodation []Accommodation `gorm:"foreignKey:LocationID"`
 	Event []Event `gorm:"foreignKey:LocationID"`

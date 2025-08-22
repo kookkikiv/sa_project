@@ -7,103 +7,122 @@ import (
 	"github.com/gin-gonic/gin"
 )
 
-// POST /create ppackage
+// POST /new-package
 func CreatePackage(c *gin.Context) {
-
 	var body entity.Package
 
-	if err := c.ShouldBindJSON((&body)); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "Bad request body"})
+	// Bind JSON data
+	if err := c.ShouldBindJSON(&body); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Bad request body: " + err.Error()})
 		return
 	}
 
 	db := config.DB()
 
-	// ตรวจอสบ guide ID
-	var soundType entity.Guide
-	if tx := db.Where("id = ?", body.GuideID).First(&soundType); tx.RowsAffected == 0 {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "id not found"})
+	// ตรวจสอบ Guide ID (แก้ไขชื่อตัวแปร)
+	var guide entity.Guide
+	if err := db.Where("id = ?", body.GuideID).First(&guide).Error; err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Guide ID not found"})
 		return
 	}
 
-	// ตรวจสอบ AccommodationID
-	var creator entity.Admin
-	if tx := config.DB().Where("id = ?", body.AdminID).First(&creator); tx.RowsAffected == 0 {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "id not found"})
+	// ตรวจสอบ Admin ID (แก้ไขชื่อตัวแปร)
+	var admin entity.Admin
+	if err := db.Where("id = ?", body.AdminID).First(&admin).Error; err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Admin ID not found"})
 		return
 	}
 
-	// บันทึกลงฐานข้อมูล
-	if err := config.DB().Model(&entity.Package{}).Create(&body).Error; err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+	// บันทึกลงฐานข้อมูล (ลบ Model() ออก เพราะไม่จำเป็น)
+	if err := db.Create(&body).Error; err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to create package: " + err.Error()})
 		return
 	}
 
-	c.JSON(http.StatusCreated, body)
+	c.JSON(http.StatusCreated, gin.H{"data": body, "message": "Package created successfully"})
 }
 
 // GET /package
 func FindPackage(c *gin.Context) {
-	var pack []entity.Package
+	var packages []entity.Package
 
-	// parameter creator_id
-	AccommodationId := c.Query("accommodation_id")
+	// parameter accommodation_id
+	accommodationId := c.Query("accommodation_id")
 
-	if AccommodationId != "" {
-		if err := config.DB().Preload("Accommodation").Preload("Event").Raw("SELECT * FROM package WHERE accommodation_id=?", AccommodationId).Find(&pack).Error; err != nil {
-			c.JSON(http.StatusNotFound, gin.H{"error": err.Error()})
+	db := config.DB()
+
+	if accommodationId != "" {
+		// ใช้ Where() แทน Raw() เพื่อความปลอดภัย
+		if err := db.Preload("Accommodation").Preload("Event").Where("accommodation_id = ?", accommodationId).Find(&packages).Error; err != nil {
+			c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 			return
 		}
 	} else {
-		if err := config.DB().Preload("Accommodation").Preload("Event").Raw("SELECT * FROM package").Find(&pack).Error; err != nil {
-			c.JSON(http.StatusNotFound, gin.H{"error": err.Error()})
+		if err := db.Preload("Accommodation").Preload("Event").Find(&packages).Error; err != nil {
+			c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 			return
 		}
 	}
 
-	c.JSON(http.StatusOK, pack)
+	c.JSON(http.StatusOK, gin.H{"data": packages})
 }
 
-// PUT /pack/:id
+// PUT /package/update
 func UpdatePackage(c *gin.Context) {
-	var pack entity.Package
-	if err := c.ShouldBindJSON(&pack); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+	var updateData entity.Package
+	
+	// Bind JSON data
+	if err := c.ShouldBindJSON(&updateData); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Bad request body: " + err.Error()})
 		return
 	}
 
-	if tx := config.DB().Where("id = ?", pack.ID).First(&pack); tx.RowsAffected == 0 {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "user not found"})
+	// ตรวจสอบว่า package มีอยู่จริง
+	var existingPackage entity.Package
+	if err := config.DB().Where("id = ?", updateData.ID).First(&existingPackage).Error; err != nil {
+		c.JSON(http.StatusNotFound, gin.H{"error": "Package not found"})
 		return
 	}
 
-	if err := config.DB().Save(&pack).Error; err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+	// อัปเดตข้อมูล
+	if err := config.DB().Model(&existingPackage).Updates(&updateData).Error; err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to update package: " + err.Error()})
 		return
 	}
 
-	c.JSON(http.StatusOK, gin.H{"message": "updated successful"})
+	c.JSON(http.StatusOK, gin.H{"data": existingPackage, "message": "Package updated successfully"})
 }
 
 // GET /package/:id
 func FindPackageById(c *gin.Context) {
 	var pack entity.Package
 	id := c.Param("id")
-	if tx := config.DB().Preload("SoundType").Preload("Creator").Where("id = ?", id).First(&pack); tx.RowsAffected == 0 {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "id not found"})
+	
+	// แก้ไข Preload ให้ตรงกับ entity จริง
+	if err := config.DB().Preload("Guide").Preload("Admin").Preload("Accommodation").Preload("Event").Where("id = ?", id).First(&pack).Error; err != nil {
+		c.JSON(http.StatusNotFound, gin.H{"error": "Package not found"})
 		return
 	}
 
-	c.JSON(http.StatusOK, pack)
+	c.JSON(http.StatusOK, gin.H{"data": pack})
 }
 
 // DELETE /package/:id
 func DeletePackageById(c *gin.Context) {
 	id := c.Param("id")
-	if tx := config.DB().Exec("DELETE FROM sounds WHERE id = ?", id); tx.RowsAffected == 0 {
-		c.JSON(http.StatusNotFound, gin.H{"error": "id not found"})
+	
+	// ตรวจสอบว่า package มีอยู่จริงก่อนลบ
+	var pack entity.Package
+	if err := config.DB().Where("id = ?", id).First(&pack).Error; err != nil {
+		c.JSON(http.StatusNotFound, gin.H{"error": "Package not found"})
+		return
+	}
+	
+	// ลบ package ที่ถูกต้อง (แก้จาก sounds เป็น packages)
+	if err := config.DB().Delete(&pack, id).Error; err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to delete package"})
 		return
 	}
 
-	c.JSON(http.StatusOK, gin.H{"message": "deleted succesful"})
+	c.JSON(http.StatusOK, gin.H{"message": "Package deleted successfully"})
 }
