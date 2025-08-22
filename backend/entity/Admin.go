@@ -10,7 +10,7 @@ type Admin struct {
 	Username 	string
 	Password 	string
 	Email		string
-	Fristname	string
+	Firstname	string
 	Lastname	string
 	Birthday	time.Time
 	

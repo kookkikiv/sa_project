@@ -4,6 +4,7 @@ import(
 	"fmt"
 	"time"
 	"github.com/kookkikiv/sa_project/backend/entity"
+	//"golang.org/x/crypto/bcrypt"
 	"gorm.io/driver/sqlite"
 	"gorm.io/gorm"
 )
@@ -15,12 +16,12 @@ func DB() *gorm.DB{
 }
 
 func ConnectionDB(){
-	database,err :=gorm.Open(sqlite.Open("sa.db?cache=shared"), &gorm.Config{}
+	database,err :=gorm.Open(sqlite.Open("sa.db?cache=shared"), &gorm.Config{})
 	if err != nil {
        panic("failed to connect database")
    	}
    	fmt.Println("connected database")
-   	db = database)
+   	db = database
 }
 
 func SetupDatabase() {
@@ -45,10 +46,10 @@ func SetupDatabase() {
    Admin := &entity.Admin{
 		Username: 	"SA",
 		Password:  hashedPassword,
-		FirstName: "Software",
-		LastName:  "Analysis",
+		Firstname: "Software",
+		Lastname:  "Analysis",
 		Email:     "sa@gmail.com",
-		BirthDay:  BirthDay,
+		Birthday:  BirthDay,
    }
    db.FirstOrCreate(Admin, &entity.Admin{
        Email: "sa@gmail.com",

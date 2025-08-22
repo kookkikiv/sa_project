@@ -1,4 +1,6 @@
 import { useState } from 'react';
+import {createRoot} from "react-dom/client";
+import {APIProvider, Map} from '@vis.gl/react-google-maps';
 
 export default function AddUI() {
   const [formData, setFormData] = useState({
@@ -41,7 +43,7 @@ export default function AddUI() {
   return (
     <div style={{ padding: "20px", maxWidth: "800px", margin: "0 auto" }}>
       <h1 style={{ fontSize: "24px", marginBottom: "30px", fontWeight: "bold" }}>
-        เพิ่มข้อมูลแพ็คเกจ
+        เพิ่มข้อมูลที่พัก
       </h1>
 
       <div style={{
@@ -50,9 +52,9 @@ export default function AddUI() {
         gap: "20px",
         marginBottom: "30px"
       }}>
-        {/* ชื่อแพ็คเกจ */}
+        {/* ชื่อที่พัก*/}
         <div style={{ gridColumn: "span 2" }}>
-          <label htmlFor="Name">ชื่อแพ็คเกจ <span style={{ color: "red" }}>*</span></label>
+          <label htmlFor="Name">ชื่อที่พัก <span style={{ color: "red" }}>*</span></label>
           <input
             type="text"
             id="Name"
@@ -64,25 +66,9 @@ export default function AddUI() {
           />
         </div>
 
-        {/* ราคาเริ่มต้น */}
+        {/* จำนวนห้อง */}
         <div>
-          <label htmlFor="Price">ราคาเริ่มต้น</label>
-          <div style={{ position: "relative" }}>
-            <input
-              type="number"
-              id="Price"
-              name="Price"
-              value={formData.Price}
-              onChange={handleInputChange}
-              style={{ ...inputStyle, paddingRight: "40px" }}
-            />
-            <span style={unitStyle}>บาท</span>
-          </div>
-        </div>
-
-        {/* จำนวนคน */}
-        <div>
-          <label htmlFor="Quantity">จำนวนคน</label>
+          <label htmlFor="Quantity">จำนวนห้อง</label>
           <input
             type="number"
             id="Quantity"
@@ -126,48 +112,6 @@ export default function AddUI() {
             <option value="เปิดใช้บริการ">เปิดใช้บริการ</option>
             <option value="ปิดปรับปรุง">ปิดปรับปรุง</option>
           </select>
-        </div>
-
-        {/* ที่พัก */}
-        <div style={{ gridColumn: "span 2" }}>
-          <label htmlFor="Accommodation">ที่พัก <span style={{ color: "red" }}>*</span></label>
-          <input
-            type="text"
-            id="Accommodation"
-            name="Accommodation"
-            value={formData.Accommodation}
-            onChange={handleInputChange}
-            required
-            style={inputStyle}
-          />
-        </div>
-
-        {/* วันที่เริ่ม */}
-        <div>
-          <label htmlFor="OpenDate">วันที่เริ่ม <span style={{ color: "red" }}>*</span></label>
-          <input
-            type="date"
-            id="OpenDate"
-            name="OpenDate"
-            value={formData.OpenDate}
-            onChange={handleInputChange}
-            required
-            style={inputStyle}
-          />
-        </div>
-
-        {/* วันที่สิ้นสุด */}
-        <div>
-          <label htmlFor="CloseDate">วันที่สิ้นสุด <span style={{ color: "red" }}>*</span></label>
-          <input
-            type="date"
-            id="CloseDate"
-            name="CloseDate"
-            value={formData.CloseDate}
-            onChange={handleInputChange}
-            required
-            style={inputStyle}
-          />
         </div>
       </div>
 
