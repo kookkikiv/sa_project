@@ -6,9 +6,10 @@ import(
 
 type Location struct{
 	gorm.Model
+	OriginalID  uint   `gorm:"index"`
 	Name		string
 	Type		string
-	Province	string
+	City	string
 	District	string
 	Subdistrict	string
 	ZipCode		string

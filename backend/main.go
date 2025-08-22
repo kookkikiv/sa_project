@@ -12,6 +12,7 @@ func main() {
 	config.ConnectionDB()
 	config.SetupDatabase()
 
+
 	r := gin.Default()
 	r.Use(CORSMiddleware())
 

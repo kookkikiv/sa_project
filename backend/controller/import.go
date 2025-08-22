@@ -7,6 +7,7 @@ import (
 	"log"
 	"net/http"
 
+
 	"github.com/kookkikiv/sa_project/backend/config"
 	"github.com/kookkikiv/sa_project/backend/entity"
 )
@@ -55,7 +56,7 @@ var (
 	subdistrictMap  = make(map[int]Subdistrict)
 )
 
-func ImportLocations() {
+func main() {
 	// เชื่อมต่อฐานข้อมูล
 	config.ConnectionDB()
 	config.SetupDatabase()
@@ -177,11 +178,13 @@ func createLocationRecords() error {
 			continue
 		}
 
+		
+
 		// สร้าง Location record แบบ flat structure
 		location := entity.Location{
 			Name:        sub.NameTh,
 			Type:        "subdistrict", // หรือ "location" ตามที่ต้องการ
-			Province:        province.NameTh,
+			City:        province.NameTh,
 			District:    district.NameTh,
 			Subdistrict: sub.NameTh,
 
@@ -236,13 +239,15 @@ func createProvinceLocations() error {
 	var locations []entity.Location
 
 	for _, prov := range provinceMap {
+	
 		
 		location := entity.Location{
 			Name:        prov.NameTh,
 			Type:        "province",
-			Province:        prov.NameTh,
+			City:        prov.NameTh,
 			District:    "",
 			Subdistrict: "",
+
 		}
 
 		locations = append(locations, location)
@@ -261,9 +266,10 @@ func createDistrictLocations() error {
 		location := entity.Location{
 			Name:        dist.NameTh,
 			Type:        "district",
-			Province:        province.NameTh,
+			City:        province.NameTh,
 			District:    dist.NameTh,
 			Subdistrict: "",
+
 		}
 
 		locations = append(locations, location)
