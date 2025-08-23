@@ -21,7 +21,16 @@ func main() {
 	// API routes
 	api := r.Group("/api/v1")
 	{
-
+		locationRoutes := api.Group("/location")
+		{
+    		locationRoutes.GET("/provinces", controller.FindProvinces)
+    		locationRoutes.POST("/provinces", controller.CreateProvince)
+    		locationRoutes.GET("/districts", controller.FindDistricts)
+    		locationRoutes.POST("/districts", controller.CreateDistrict)
+    		locationRoutes.GET("/subdistricts", controller.FindSubdistricts)
+    		locationRoutes.POST("/subdistricts", controller.CreateSubdistrict)
+    		locationRoutes.POST("/import-sample", controller.ImportSampleLocationData)
+}
 		// Accommodation routes
 		accommodationRoutes := api.Group("/accommodation")
 		{
@@ -66,7 +75,19 @@ func main() {
 	// Run the server
 	r.Run("localhost:" + PORT)
 }
-
+func addThailandRoutes(api *gin.RouterGroup) {
+	thailandRoutes := api.Group("/thailand")
+	{
+		thailandRoutes.POST("/import-all", ImportThailandAll)
+		thailandRoutes.GET("/stats", GetThailandStats)
+		thailandRoutes.POST("/clear-data", ClearThailandData)
+		
+		// Location query routes
+		thailandRoutes.GET("/provinces", FindProvinces)
+		thailandRoutes.GET("/districts", FindDistricts)
+		thailandRoutes.GET("/subdistricts", FindSubdistricts)
+	}
+}
 func CORSMiddleware() gin.HandlerFunc {
 	return func(c *gin.Context) {
 		c.Writer.Header().Set("Access-Control-Allow-Origin", "*")
