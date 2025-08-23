@@ -9,7 +9,7 @@ func HashPassword(password string) (string, error) {
 }
 
 // checkPasswordHash เป็น function สำหรับ check password ที่ hash แล้ว ว่าตรงกันหรือไม่
-func CheckPasswordHash(password, hash []byte) bool {
-   err := bcrypt.CompareHashAndPassword(hash, password)
-   return err == nil
+func CheckPasswordHash(password, hash string) bool {
+    err := bcrypt.CompareHashAndPassword([]byte(hash), []byte(password))
+    return err == nil
 }

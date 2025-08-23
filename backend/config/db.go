@@ -27,20 +27,20 @@ func ConnectionDB(){
 func SetupDatabase() {
     // AutoMigrate ก่อน
     err := db.AutoMigrate(
-        &entity.Province{},    // เรียงลำดับตาม dependency
+        &entity.Province{},    
         &entity.District{}, 
         &entity.Subdistrict{}, 
+        &entity.Admin{},       // ย้ายมาก่อน
+        &entity.Guide{},       // ย้ายมาก่อน
+        &entity.Facility{},    // ย้ายมาก่อน
         &entity.Accommodation{},
-        &entity.Admin{},
         &entity.Event{},
+        &entity.Room{},
+        &entity.Package{},     // ย้ายมาหลัง
         &entity.Fac_Acc{},
         &entity.Fac_Room{},
-        &entity.Facility{},
-        &entity.Guide{}, 
-        &entity.Pac_Acc{},
-        &entity.Pac_Event{},
-        &entity.Package{},
-        &entity.Room{},
+        &entity.Pac_Acc{},     // ย้ายมาหลังสุด
+        &entity.Pac_Event{},   // ย้ายมาหลังสุด
     )
     if err != nil {
         log.Printf("Migration error: %v", err)

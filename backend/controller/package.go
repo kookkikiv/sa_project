@@ -9,64 +9,94 @@ import (
 
 // POST /new-package
 func CreatePackage(c *gin.Context) {
-	var body entity.Package
+    var body entity.Package
 
-	// Bind JSON data
-	if err := c.ShouldBindJSON(&body); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "Bad request body: " + err.Error()})
-		return
-	}
+    if err := c.ShouldBindJSON(&body); err != nil {
+        c.JSON(http.StatusBadRequest, gin.H{
+            "error": "Invalid JSON format",
+            "details": err.Error(),
+        })
+        return
+    }
 
-	db := config.DB()
+    db := config.DB()
 
-	// ตรวจสอบ Guide ID (แก้ไขชื่อตัวแปร)
-	var guide entity.Guide
-	if err := db.Where("id = ?", body.GuideID).First(&guide).Error; err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "Guide ID not found"})
-		return
-	}
+    // ตรวจสอบ required fields
+    if body.GuideID == nil || body.AdminID == nil {
+        c.JSON(http.StatusBadRequest, gin.H{
+            "error": "GuideID and AdminID are required",
+        })
+        return
+    }
 
-	// ตรวจสอบ Admin ID (แก้ไขชื่อตัวแปร)
-	var admin entity.Admin
-	if err := db.Where("id = ?", body.AdminID).First(&admin).Error; err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "Admin ID not found"})
-		return
-	}
+    // ตรวจสอบ relationships ใน transaction
+    tx := db.Begin()
+    defer func() {
+        if r := recover(); r != nil {
+            tx.Rollback()
+        }
+    }()
 
-	// บันทึกลงฐานข้อมูล (ลบ Model() ออก เพราะไม่จำเป็น)
-	if err := db.Create(&body).Error; err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to create package: " + err.Error()})
-		return
-	}
+    var guide entity.Guide
+    if err := tx.Where("id = ?", body.GuideID).First(&guide).Error; err != nil {
+        tx.Rollback()
+        c.JSON(http.StatusBadRequest, gin.H{"error": "Guide not found"})
+        return
+    }
 
-	c.JSON(http.StatusCreated, gin.H{"data": body, "message": "Package created successfully"})
+    var admin entity.Admin
+    if err := tx.Where("id = ?", body.AdminID).First(&admin).Error; err != nil {
+        tx.Rollback()
+        c.JSON(http.StatusBadRequest, gin.H{"error": "Admin not found"})
+        return
+    }
+
+    if err := tx.Create(&body).Error; err != nil {
+        tx.Rollback()
+        c.JSON(http.StatusInternalServerError, gin.H{
+            "error": "Failed to create package",
+            "details": err.Error(),
+        })
+        return
+    }
+
+    tx.Commit()
+    c.JSON(http.StatusCreated, gin.H{
+        "data": body, 
+        "message": "Package created successfully",
+    })
 }
-
 // GET /package
 func FindPackage(c *gin.Context) {
-	var packages []entity.Package
+    var packages []entity.Package
 
-	// parameter accommodation_id
-	accommodationId := c.Query("accommodation_id")
+    db := config.DB()
+    
+    // Preload ที่ถูกต้อง
+    query := db.Preload("Guide").
+        Preload("Admin").
+        Preload("Province").
+        Preload("District").
+        Preload("Subdistrict").
+        Preload("Pac_Event").
+        Preload("Pac_Event.Event").
+        Preload("Pac_Acc").
+        Preload("Pac_Acc.Accommodation")
+    
+    accommodationId := c.Query("accommodation_id")
+    if accommodationId != "" {
+        // Join กับ pac_accs table เพื่อ filter
+        query = query.Joins("JOIN pac_accs ON pac_accs.package_id = packages.id").
+            Where("pac_accs.accommodation_id = ?", accommodationId)
+    }
+    
+    if err := query.Find(&packages).Error; err != nil {
+        c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+        return
+    }
 
-	db := config.DB()
-
-	if accommodationId != "" {
-		// ใช้ Where() แทน Raw() เพื่อความปลอดภัย
-		if err := db.Preload("Accommodation").Preload("Event").Where("accommodation_id = ?", accommodationId).Find(&packages).Error; err != nil {
-			c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
-			return
-		}
-	} else {
-		if err := db.Preload("Accommodation").Preload("Event").Find(&packages).Error; err != nil {
-			c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
-			return
-		}
-	}
-
-	c.JSON(http.StatusOK, gin.H{"data": packages})
+    c.JSON(http.StatusOK, gin.H{"data": packages})
 }
-
 // PUT /package/update
 func UpdatePackage(c *gin.Context) {
 	var updateData entity.Package
