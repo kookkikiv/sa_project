@@ -56,7 +56,5 @@ func SetupDatabase() {
    db.FirstOrCreate(Admin, &entity.Admin{
        Email: "sa@gmail.com",
    })
-   db.Model(&entity.Province{}).Create(&entity.Province{
-	
-	})
+
 }
