@@ -8,7 +8,7 @@ type Pac_Event struct {
 	gorm.Model
 
 	PackageID	*uint
-	Package	Facility `gorm:"foreignkey:PackageID"`
+	Package	Package `gorm:"foreignkey:PackageID"`
 
 	EventID	*uint
 	Event	Event `gorm:"foreignkey:EventID"`

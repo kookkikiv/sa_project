@@ -15,6 +15,8 @@ func main() {
 
 	r := gin.Default()
 	r.Use(CORSMiddleware())
+	// เพิ่มใน main.go
+
 
 	// API routes
 	api := r.Group("/api/v1")

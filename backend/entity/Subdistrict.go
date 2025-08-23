@@ -6,7 +6,7 @@ import(
 
 type Subdistrict struct{
 	gorm.Model
-	SubdistrictCode   string `gorm:"primaryKey" json:"subdistrictID"`
+	SubdistrictCode   string `gorm:"uniqueIndex" json:"subdistrictID"`
     NameTh       	string `json:"subdistrictNameTh"`
     NameEn       	string `json:"subdistrictNameEn"`
 

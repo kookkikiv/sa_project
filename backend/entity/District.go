@@ -6,7 +6,7 @@ import(
 
 type District struct{
 	gorm.Model
-    DistrictCode        string `gorm:"primaryKey" json:"DistrictID"`
+    DistrictCode        string `gorm:"uniqueIndex" json:"districtID"`
     NameTh      string `json:"districtNameTh"`
     NameEn      string `json:"districtNameEn"`
 
@@ -14,7 +14,7 @@ type District struct{
 	Province		Province `gorm:"foreignkey:ProvinceID"`
 	
 
-	Subdistrict []Subdistrict `gorm:"foreignKey:SubdistrictID"`
+	Subdistrict []Subdistrict `gorm:"foreignKey:DistrictID"`
 
 	Accommodation []Accommodation `gorm:"foreignKey:DistrictID"`
 	Event []Event `gorm:"foreignKey:DistrictID"`
