@@ -28,16 +28,18 @@ func SetupDatabase() {
    db.AutoMigrate(
         &entity.Accommodation{},
     	&entity.Admin{},
+		&entity.District{}, 
     	&entity.Event{},
     	&entity.Fac_Acc{},
 		&entity.Fac_Room{},
 		&entity.Facility{},
-		&entity.Guide{},
-		&entity.Location{},  
+		&entity.Guide{}, 
 		&entity.Pac_Acc{},
 		&entity.Pac_Event{},
 		&entity.Package{},
+		&entity.Province{}, 
 		&entity.Room{},
+		&entity.Subdistrict{}, 
    )
    
 
@@ -54,4 +56,7 @@ func SetupDatabase() {
    db.FirstOrCreate(Admin, &entity.Admin{
        Email: "sa@gmail.com",
    })
+   db.Model(&entity.Province{}).Create(&entity.Province{
+	
+	})
 }

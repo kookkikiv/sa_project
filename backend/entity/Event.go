@@ -8,8 +8,6 @@ type Event struct {
 	gorm.Model
 	Name 	string
 
-	LocationID	*uint
-	Location	Location `gorm:"foreignkey:LocationID"`
 
 	Pac_Event []Pac_Event `gorm:"foreignKey:EventID"`
 }

@@ -13,6 +13,16 @@ type Package struct {
 
 	GuideID		*uint
 	Guide	Guide `gorm:"foreignkey:GuideID"`
+
+	ProvinceID		*uint
+	Province		Province `gorm:"foreignkey:ProvinceID"`
+
+	DistrictID		*uint
+	District		District `gorm:"foreignkey:DistrictID"`
+
+	SubdistrictID		*uint
+	Subdistrict		Subdistrict `gorm:"foreignkey:SubdistrictID"`
+
 	AdminID		*uint
 	Admin	Admin `gorm:"foreignkey:AdminID"`
 

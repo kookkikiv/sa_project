@@ -8,10 +8,7 @@ export default function AddUI() {
     Accommodation: '',
     Location: '',
     Status: '',
-    Price: '',
-    Quantity: '',
-    OpenDate: '',
-    CloseDate: ''
+    Type: '',
   });
 
   const handleInputChange = (e: any) => {
@@ -33,10 +30,8 @@ export default function AddUI() {
       Accommodation: '',
       Location: '',
       Status: '',
-      Price: '',
-      Quantity: '',
-      OpenDate: '',
-      CloseDate: ''
+      Type: '',
+
     });
   };
 
@@ -65,18 +60,22 @@ export default function AddUI() {
             style={inputStyle}
           />
         </div>
-
-        {/* จำนวนห้อง */}
+          {/* typeที่พัก*/}
         <div>
-          <label htmlFor="Quantity">จำนวนห้อง</label>
-          <input
-            type="number"
-            id="Quantity"
-            name="Quantity"
-            value={formData.Quantity}
+          <label htmlFor="Type">ลักษณะที่พัก <span style={{ color: "red" }}>*</span></label>
+          <select
+            id="Type"
+            name="Type"
+            value={formData.Type}
             onChange={handleInputChange}
+            required
             style={inputStyle}
-          />
+          >
+            <option value="">กรุณาเลือกลักษณะที่พัก</option>
+            <option value="โรงแรม">โรงแรม</option>
+            <option value="รีสอร์ท">รีสอร์ท</option>
+            <option value="โฮสเทล">โฮสเทล</option>
+          </select>
         </div>
 
         {/* สถานที่ */}

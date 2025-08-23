@@ -19,22 +19,6 @@ func main() {
 	// API routes
 	api := r.Group("/api/v1")
 	{
-		// Location routes - Thailand Geography (Flat Structure)
-		locationRoutes := api.Group("/locations")
-		{
-			locationRoutes.GET("", controller.GetLocations)                     // ดึง location ทั้งหมด
-			locationRoutes.GET("/:id", controller.GetLocationById)              // ดึง location ตาม ID
-			locationRoutes.POST("", controller.CreateLocation)                  // สร้าง location ใหม่
-			locationRoutes.PUT("/:id", controller.UpdateLocation)               // อัปเดต location
-			locationRoutes.DELETE("/:id", controller.DeleteLocation)            // ลบ location
-			
-			locationRoutes.GET("/cities", controller.GetCities)                 // ดึงรายชื่อจังหวัด
-			locationRoutes.GET("/districts", controller.GetDistricts)           // ดึงรายชื่ออำเภอ
-			locationRoutes.GET("/subdistricts", controller.GetSubdistricts)     // ดึงรายชื่อตำบล
-			locationRoutes.GET("/search", controller.SearchLocations)           // ค้นหา location
-			locationRoutes.GET("/nearby", controller.GetNearbyLocations)        // หา location ใกล้เคียง
-			locationRoutes.POST("/import", controller.ImportThailandGeography)  // Import ข้อมูล
-		}
 
 		// Accommodation routes
 		accommodationRoutes := api.Group("/accommodation")

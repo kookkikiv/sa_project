@@ -8,8 +8,7 @@ type Accommodation struct {
 	Type 	string
 	Status  string
 
-	LocationID	*uint
-	Location	Location `gorm:"foreignkey:LocationID"`
+
 
 	AdminID		*uint
 	Admin		Admin `gorm:"foreignkey:AdminID"`
