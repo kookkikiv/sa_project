@@ -8,7 +8,12 @@ type Accommodation struct {
 	Type 	string
 	Status  string
 
-
+	ProvinceID		*uint
+	Province		Province `gorm:"foreignkey:ProvinceID"`
+	DistrictID		*uint
+	District		District `gorm:"foreignkey:DistrictID"`
+	SubdistrictID	*uint
+	Subdistrict		Subdistrict `gorm:"foreignkey:SubdistrictID"`
 
 	AdminID		*uint
 	Admin		Admin `gorm:"foreignkey:AdminID"`

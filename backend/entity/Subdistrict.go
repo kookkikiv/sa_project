@@ -1,11 +1,12 @@
 package entity
 
 import(
-	//"gorm.io/gorm"
+	"gorm.io/gorm"
 )
 
 type Subdistrict struct{
-	SubdistrictID   string `gorm:"primaryKey" json:"subdistrictID"`
+	gorm.Model
+	SubdistrictCode   string `gorm:"primaryKey" json:"subdistrictID"`
     NameTh       	string `json:"subdistrictNameTh"`
     NameEn       	string `json:"subdistrictNameEn"`
 
