@@ -1,21 +1,21 @@
 package entity
 
-import(
+import (
 	"gorm.io/gorm"
 )
 
-type Subdistrict struct{
+type Subdistrict struct {
 	gorm.Model
-	SubdistrictCode   string `gorm:"uniqueIndex" json:"subdistrictID"`
-    NameTh       	string `json:"subdistrictNameTh"`
-    NameEn       	string `json:"subdistrictNameEn"`
+	SubdistrictCode string `gorm:"uniqueIndex" json:"subdistrictID"`
+	NameTh          string `json:"subdistrictNameTh"`
+	NameEn          string `json:"subdistrictNameEn"`
 
-	ProvinceID		*uint
-	Province		Province `gorm:"foreignkey:ProvinceID"`
-	DistrictID		*uint
-	District		District `gorm:"foreignkey:DistrictID"`
+	// ความสัมพันธ์หลัก
+	DistrictID uint     `json:"districtID"`
+	District   District `gorm:"foreignKey:DistrictID"`
 
+	// ความสัมพันธ์กับ entity อื่น ๆ
 	Accommodation []Accommodation `gorm:"foreignKey:SubdistrictID"`
-	Event []Event `gorm:"foreignKey:SubdistrictID"`
-	Package []Package `gorm:"foreignKey:SubdistrictID"`
+	Event         []Event         `gorm:"foreignKey:SubdistrictID"`
+	Package       []Package       `gorm:"foreignKey:SubdistrictID"`
 }

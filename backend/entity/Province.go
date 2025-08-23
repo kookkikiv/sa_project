@@ -11,7 +11,6 @@ type Province struct{
     NameEn string `json:"provinceNameEn"`
 
 	District []District `gorm:"foreignKey:ProvinceID"`
-	Subdistrict []Subdistrict `gorm:"foreignKey:ProvinceID"`
 	Accommodation []Accommodation `gorm:"foreignKey:ProvinceID"`
 	Event []Event `gorm:"foreignKey:ProvinceID"`
 	Package []Package `gorm:"foreignKey:ProvinceID"`

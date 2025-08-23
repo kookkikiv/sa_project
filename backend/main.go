@@ -1,36 +1,40 @@
 package main
 
 import (
+	"github.com/gin-gonic/gin"
 	"github.com/kookkikiv/sa_project/backend/config"
 	"github.com/kookkikiv/sa_project/backend/controller"
-	"github.com/gin-gonic/gin"
 )
 
 const PORT = "8088"
 
 func main() {
+	// Database setup
 	config.ConnectionDB()
 	config.SetupDatabase()
 
 
 	r := gin.Default()
+	r.POST("/import-thailand-all", controller.ImportThailandAll)
 	r.Use(CORSMiddleware())
-	// เพิ่มใน main.go
 
-
-	// API routes
+	// API v1 routes
 	api := r.Group("/api/v1")
 	{
+		// Location routes
 		locationRoutes := api.Group("/location")
 		{
-    		locationRoutes.GET("/provinces", controller.FindProvinces)
-    		locationRoutes.POST("/provinces", controller.CreateProvince)
-    		locationRoutes.GET("/districts", controller.FindDistricts)
-    		locationRoutes.POST("/districts", controller.CreateDistrict)
-    		locationRoutes.GET("/subdistricts", controller.FindSubdistricts)
-    		locationRoutes.POST("/subdistricts", controller.CreateSubdistrict)
-    		locationRoutes.POST("/import-sample", controller.ImportSampleLocationData)
-}
+			locationRoutes.GET("/provinces", controller.FindProvinces)
+			locationRoutes.POST("/provinces", controller.CreateProvince)
+
+			locationRoutes.GET("/districts", controller.FindDistricts)
+			locationRoutes.POST("/districts", controller.CreateDistrict)
+
+			locationRoutes.GET("/subdistricts", controller.FindSubdistricts)
+			locationRoutes.POST("/subdistricts", controller.CreateSubdistrict)
+
+		}
+
 		// Accommodation routes
 		accommodationRoutes := api.Group("/accommodation")
 		{
@@ -48,47 +52,49 @@ func main() {
 			packageRoutes.GET("/:id", controller.FindPackageById)
 			packageRoutes.DELETE("/:id", controller.DeletePackageById)
 		}
-	}
-	// เพิ่มหลัง packageRoutes
+
+		// Thailand routes
 		thailandRoutes := api.Group("/thailand")
 		{
 			thailandRoutes.POST("/import-all", controller.ImportThailandAll)
 			thailandRoutes.GET("/stats", controller.GetThailandStats)
 			thailandRoutes.POST("/clear-data", controller.ClearThailandData)
+
+			// reuse existing find handlers
 			thailandRoutes.GET("/provinces", controller.FindProvinces)
 			thailandRoutes.GET("/districts", controller.FindDistricts)
 			thailandRoutes.GET("/subdistricts", controller.FindSubdistricts)
 		}
-	// Legacy routes (backward compatibility)
-	router := r.Group("/")
-	{
-		// accommodation routes
-		router.GET("/accommodation", controller.FindAccommodation)
-		router.GET("/accommodation/:id", controller.FindAccommodationId)
-		router.DELETE("/accommodation/:id", controller.DeleteAccommodationById)
-
-		// package routes
-		router.POST("/new-package", controller.CreatePackage)
-		router.GET("/package", controller.FindPackage)
-		router.PUT("/package/update", controller.UpdatePackage)
-		router.GET("/package/:id", controller.FindPackageById)
-		router.DELETE("/package/:id", controller.DeletePackageById)
 	}
 
-	// Authentication routes (future implementation)
-	// r.POST("/member/signup", controllers.CreateMember)
-	// r.POST("/creator/signup", controllers.CreateCreator)
-	// r.POST("/member/auth", controllers.LoginMember)
-	// r.POST("/creator/auth", controllers.LoginCreator)
+	// Legacy routes (backward compatibility)
+	legacy := r.Group("/")
+	{
+		// Accommodation
+		legacy.GET("/accommodation", controller.FindAccommodation)
+		legacy.GET("/accommodation/:id", controller.FindAccommodationId)
+		legacy.DELETE("/accommodation/:id", controller.DeleteAccommodationById)
+
+		// Package
+		legacy.POST("/new-package", controller.CreatePackage)
+		legacy.GET("/package", controller.FindPackage)
+		legacy.PUT("/package/update", controller.UpdatePackage)
+		legacy.GET("/package/:id", controller.FindPackageById)
+		legacy.DELETE("/package/:id", controller.DeletePackageById)
+	}
 
 	// Run the server
 	r.Run("localhost:" + PORT)
 }
+
+// CORS middleware
 func CORSMiddleware() gin.HandlerFunc {
 	return func(c *gin.Context) {
 		c.Writer.Header().Set("Access-Control-Allow-Origin", "*")
 		c.Writer.Header().Set("Access-Control-Allow-Credentials", "true")
-		c.Writer.Header().Set("Access-Control-Allow-Headers", "Content-Type, Content-Length, Accept-Encoding, X-CSRF-Token, Authorization, accept, origin, Cache-Control, X-Requested-With")
+		c.Writer.Header().Set("Access-Control-Allow-Headers",
+			"Content-Type, Content-Length, Accept-Encoding, X-CSRF-Token, " +
+				"Authorization, accept, origin, Cache-Control, X-Requested-With")
 		c.Writer.Header().Set("Access-Control-Allow-Methods", "POST, OPTIONS, GET, PUT, DELETE")
 
 		if c.Request.Method == "OPTIONS" {
