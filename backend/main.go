@@ -49,7 +49,16 @@ func main() {
 			packageRoutes.DELETE("/:id", controller.DeletePackageById)
 		}
 	}
-
+	// เพิ่มหลัง packageRoutes
+		thailandRoutes := api.Group("/thailand")
+		{
+			thailandRoutes.POST("/import-all", controller.ImportThailandAll)
+			thailandRoutes.GET("/stats", controller.GetThailandStats)
+			thailandRoutes.POST("/clear-data", controller.ClearThailandData)
+			thailandRoutes.GET("/provinces", controller.FindProvinces)
+			thailandRoutes.GET("/districts", controller.FindDistricts)
+			thailandRoutes.GET("/subdistricts", controller.FindSubdistricts)
+		}
 	// Legacy routes (backward compatibility)
 	router := r.Group("/")
 	{
@@ -74,19 +83,6 @@ func main() {
 
 	// Run the server
 	r.Run("localhost:" + PORT)
-}
-func addThailandRoutes(api *gin.RouterGroup) {
-	thailandRoutes := api.Group("/thailand")
-	{
-		thailandRoutes.POST("/import-all", ImportThailandAll)
-		thailandRoutes.GET("/stats", GetThailandStats)
-		thailandRoutes.POST("/clear-data", ClearThailandData)
-		
-		// Location query routes
-		thailandRoutes.GET("/provinces", FindProvinces)
-		thailandRoutes.GET("/districts", FindDistricts)
-		thailandRoutes.GET("/subdistricts", FindSubdistricts)
-	}
 }
 func CORSMiddleware() gin.HandlerFunc {
 	return func(c *gin.Context) {
