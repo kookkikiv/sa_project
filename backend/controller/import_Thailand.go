@@ -41,7 +41,7 @@ type ThaiSubdistrict struct {
 func ImportThailandAll(c *gin.Context) {
 	db := config.DB()
 
-	log.Println("🚀 Starting Thailand geography import...")
+	log.Println("Starting Thailand geography import...")
 
 	// URLs สำหรับข้อมูลจาก thailand-geography-json
 	provincesURL := "https://raw.githubusercontent.com/thailand-geography-data/thailand-geography-json/main/src/provinces.json"
@@ -49,7 +49,7 @@ func ImportThailandAll(c *gin.Context) {
 	subdistrictsURL := "https://raw.githubusercontent.com/thailand-geography-data/thailand-geography-json/main/src/subdistricts.json"
 
 	// 1. Import Provinces
-	log.Println("📍 Importing provinces...")
+	log.Println("Importing provinces...")
 	provinces, err := fetchProvinces(provincesURL)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to fetch provinces: " + err.Error()})
@@ -81,10 +81,10 @@ func ImportThailandAll(c *gin.Context) {
 		}
 	}
 
-	log.Printf("📊 Provinces: %d imported, %d total", importedProvinces, len(provinces))
+	log.Printf("Provinces: %d imported, %d total", importedProvinces, len(provinces))
 
 	// 2. Import Districts
-	log.Println("🏢 Importing districts...")
+	log.Println("Importing districts...")
 	districts, err := fetchDistricts(districtsURL)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to fetch districts: " + err.Error()})
@@ -126,10 +126,10 @@ func ImportThailandAll(c *gin.Context) {
 		}
 	}
 
-	log.Printf("📊 Districts: %d imported, %d total", importedDistricts, len(districts))
+	log.Printf(" Districts: %d imported, %d total", importedDistricts, len(districts))
 
 	// 3. Import Subdistricts
-	log.Println("🏘️ Importing subdistricts...")
+	log.Println(" Importing subdistricts...")
 	subdistricts, err := fetchSubdistricts(subdistrictsURL)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to fetch subdistricts: " + err.Error()})
@@ -174,7 +174,7 @@ func ImportThailandAll(c *gin.Context) {
 		}
 	}
 
-	log.Printf("📊 Subdistricts: %d imported, %d total", importedSubdistricts, len(subdistricts))
+	log.Printf(" Subdistricts: %d imported, %d total", importedSubdistricts, len(subdistricts))
 
 	c.JSON(http.StatusOK, gin.H{
 		"message": "Thailand geography import completed",

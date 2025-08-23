@@ -10,6 +10,7 @@ type Room struct {
 	Name 	string
 	Type 	string
 	BedType	string
+	
 	Price	uint
 	Status	string
 
