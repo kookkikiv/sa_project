@@ -1,17 +1,16 @@
 package entity
 
-import(
-	"gorm.io/gorm"
-)
+import "gorm.io/gorm"
 
-type Province struct{
-	gorm.Model
-	ProvinceCode   string `gorm:"uniqueIndex" json:"provinceID"`
-    NameTh string `json:"provinceNameTh"`
-    NameEn string `json:"provinceNameEn"`
+// Provinces (รหัส 2 หลัก เช่น "10")
+type Province struct {
+    gorm.Model
+    ProvinceCode string `gorm:"size:2;not null;uniqueIndex" json:"provinceCode"`
+    NameTh       string `json:"provinceNameTh"`
+    NameEn       string `json:"provinceNameEn"`
 
-	District []District `gorm:"foreignKey:ProvinceID"`
-	Accommodation []Accommodation `gorm:"foreignKey:ProvinceID"`
-	Event []Event `gorm:"foreignKey:ProvinceID"`
-	Package []Package `gorm:"foreignKey:ProvinceID"`
+    Districts      []District     `gorm:"constraint:OnUpdate:CASCADE,OnDelete:RESTRICT;"`
+    Accommodations []Accommodation `gorm:"foreignKey:ProvinceID"`
+    Events         []Event         `gorm:"foreignKey:ProvinceID"`
+    Packages       []Package       `gorm:"foreignKey:ProvinceID"`
 }
