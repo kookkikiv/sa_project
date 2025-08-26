@@ -7,11 +7,11 @@ import (
 
 type Admin struct {
 	gorm.Model
-	Username 	string
-	Password 	string
-	Email		string
 	Firstname	string
 	Lastname	string
+	Username 	string
+	Email		string
+	Password 	string
 	Birthday	time.Time
 	
 	Accommodation []Accommodation `gorm:"foreignKey:AdminID"`

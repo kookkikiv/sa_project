@@ -8,7 +8,9 @@ import (
 type Package struct {
 	gorm.Model
 	Name 	string
-	Date 	time.Time
+	People	uint
+	StartDate 	time.Time
+	FinalDate 	time.Time
 	Price	uint
 
 	GuideID		*uint
