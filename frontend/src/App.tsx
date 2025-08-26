@@ -1,10 +1,14 @@
-import React from 'react';
+import React from "react";
+import { BrowserRouter as Router } from "react-router-dom";
+import ConfigRoutes from "./routes";
 import "./App.css";
-import { SystemDataUI } from "./system/system";
-function App() {
+
+const App: React.FC = () => {
   return (
-    <SystemDataUI />
+    <Router>
+      <ConfigRoutes />
+    </Router>
   );
-}
+};
 
 export default App;

@@ -2,16 +2,17 @@ import { useState, useEffect } from "react";
 import { Space, Table, Button, Col, Row, Divider, message } from "antd";
 import { PlusOutlined, DeleteOutlined } from "@ant-design/icons";
 import type { ColumnsType } from "antd/es/table";
-import { GetAccommodation, DeleteAccommodationById } from "../../services/https/index";
-import { type AccommodationInterface } from "../../interface/Accommodation";
+import { GetAdmin, DeleteAdminById } from "../../services/https/index";
+import { type AdminInterface } from "../../interface/IAdmin";
 import { Link, useNavigate } from "react-router-dom";
+import dayjs from "dayjs";
 
-function Accommodation() {
+function Admin() {
   const navigate = useNavigate();
-  const [acc, setacc] = useState<AccommodationInterface[]>([]);
+  const [admin, setadmin] = useState<AdminInterface[]>([]);
   const [messageApi, contextHolder] = message.useMessage();
   const myId = localStorage.getItem("id");
-  const columns: ColumnsType<AccommodationInterface> = [
+  const columns: ColumnsType<AdminInterface> = [
     {
       title: "",
       render: (record) => (
@@ -23,7 +24,7 @@ function Accommodation() {
               type="dashed"
               danger
               icon={<DeleteOutlined />}
-              onClick={() => deleteAccommodationById(record.ID)}
+              onClick={() => deleteAdminById(record.ID)}
             ></Button>
           )}
         </>
@@ -35,19 +36,34 @@ function Accommodation() {
       key: "id",
     },
     {
-      title: "ชื่อที่พัก",
-      dataIndex: "Name",
-      key: "Name",
+      title: "ชื่อ",
+      dataIndex: "first_name",
+      key: "first_name",
     },
     {
-      title: "ประเภท",
-      dataIndex: "Type",
-      key: "Type",
+      title: "นามสกุุล",
+      dataIndex: "last_name",
+      key: "last_name",
     },
-        {
-      title: "สถานะ",
-      dataIndex: "Status",
-      key: "Status",
+    {
+      title: "อีเมล",
+      dataIndex: "email",
+      key: "email",
+    },
+    {
+      title: "วัน/เดือน/ปี เกิด",
+      key: "birthday",
+      render: (record) => <>{dayjs(record.birthday).format("DD/MM/YYYY")}</>,
+    },
+    {
+      title: "อายุ",
+      dataIndex: "age",
+      key: "age",
+    },
+    {
+      title: "เพศ",
+      key: "gender",
+      render: (record) => <>{record?.gender?.gender}</>,
     },
     {
       title: "",
@@ -65,15 +81,15 @@ function Accommodation() {
     },
   ];
 
-  const deleteAccommodationById = async (id: string) => {
-    let res = await DeleteAccommodationById(id);
+  const deleteAdminById = async (id: string) => {
+    let res = await DeleteAdminById(id);
     
     if (res.status == 200) {
       messageApi.open({
         type: "success",
         content: res.data.message,
       });
-      await getAcc();
+      await getadmin();
     } else {
       messageApi.open({
         type: "error",
@@ -82,13 +98,13 @@ function Accommodation() {
     }
   };
 
-  const getAcc = async () => {
-    let res = await GetAccommodation();
+  const getadmin = async () => {
+    let res = await GetAdmin();
 
     if (res.status == 200) {
-      setacc(res.data);
+      setadmin(res.data);
     } else {
-      setacc([]);
+      setadmin([]);
       messageApi.open({
         type: "error",
         content: res.data.error,
@@ -98,7 +114,7 @@ function Accommodation() {
 
 
   useEffect(() => {
-    getAcc();
+    getadmin();
   }, []);
 
   return (
@@ -106,12 +122,12 @@ function Accommodation() {
       {contextHolder}
       <Row>
         <Col span={12}>
-          <h2>จัดการข้อมูลที่พัก</h2>
+          <h2>จัดการข้อมูลสมาชิก</h2>
         </Col>
 
         <Col span={12} style={{ textAlign: "end", alignSelf: "center" }}>
           <Space>
-            <Link to="/accommodation/create">
+            <Link to="/admin/create">
               <Button type="primary" icon={<PlusOutlined />}>
                 สร้างข้อมูล
               </Button>
@@ -125,7 +141,7 @@ function Accommodation() {
         <Table
           rowKey="ID"
           columns={columns}
-          dataSource={acc}
+          dataSource={admin}
           style={{ width: "100%", overflow: "scroll" }}
         />
       </div>
@@ -133,4 +149,4 @@ function Accommodation() {
   );
 }
 
-export default Accommodation;
+export default Admin;

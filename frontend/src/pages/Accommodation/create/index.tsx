@@ -8,8 +8,6 @@ import {
   Input,
   Card,
   message,
-  DatePicker,
-  InputNumber,
   Select,
 } from "antd";
 import { useState, useEffect } from "react";
@@ -97,8 +95,8 @@ function AccommodationCreate() {
             <Col xs={24} sm={24} md={24} lg={12}>
               <Form.Item
                 label="ชื่อที่พัก"
-                name="name"
-                rules={[{ required: true, message: "กรุณากรอกชื่อ !" }]}
+                name="Name"
+                rules={[{ required: true, message: "กรุณากรอกชื่อที่พัก !" }]}
               >
                 <Input />
               </Form.Item>
@@ -108,7 +106,7 @@ function AccommodationCreate() {
             <Col xs={24} sm={24} md={24} lg={12}>
               <Form.Item
                 label="ลักษณะที่พัก"
-                name="accommodation_type"
+                name="Type"
                 rules={[{ required: true, message: "กรุณาเลือกลักษณะที่พัก !" }]}
               >
                 <Select placeholder="เลือกประเภทที่พัก">
@@ -123,7 +121,7 @@ function AccommodationCreate() {
             <Col xs={24} sm={24} md={24} lg={12}>
               <Form.Item
                 label="สถานะที่พัก"
-                name="accommodation_status"
+                name="Status"
                 rules={[{ required: true, message: "กรุณาเลือกสถานะที่พัก !" }]}
               >
                 <Select placeholder="เลือกสถานะที่พัก">
@@ -137,7 +135,7 @@ function AccommodationCreate() {
             <Col xs={24} sm={24} md={24} lg={12}>
               <Form.Item
                 label="จังหวัด"
-                name="province_id"
+                name="Province"
                 rules={[{ required: true, message: "กรุณาเลือกจังหวัด !" }]}
               >
                 <Select
@@ -151,8 +149,8 @@ function AccommodationCreate() {
                   allowClear
                 >
                   {province.map((item) => (
-                    <Select.Option key={item.id} value={item.id}>
-                      {item.name}
+                    <Select.Option key={item.ID} value={item.ID}>
+                      {item.NameTh}
                     </Select.Option>
                   ))}
                 </Select>
@@ -163,7 +161,7 @@ function AccommodationCreate() {
             <Col xs={24} sm={24} md={24} lg={12}>
               <Form.Item
                 label="อำเภอ"
-                name="district_id"
+                name="District"
                 rules={[{ required: true, message: "กรุณาเลือกอำเภอ !" }]}
               >
                 <Select
@@ -176,8 +174,8 @@ function AccommodationCreate() {
                   allowClear
                 >
                   {district.map((item) => (
-                    <Select.Option key={item.id} value={item.id}>
-                      {item.name}
+                    <Select.Option key={item.ID} value={item.ID}>
+                      {item.NameTh}
                     </Select.Option>
                   ))}
                 </Select>
@@ -188,13 +186,13 @@ function AccommodationCreate() {
             <Col xs={24} sm={24} md={24} lg={12}>
               <Form.Item
                 label="ตำบล"
-                name="subdistrict_id"
+                name="Subdistrict"
                 rules={[{ required: true, message: "กรุณาเลือกตำบล !" }]}
               >
                 <Select placeholder="เลือกตำบล" disabled={!selectedDistrict} allowClear>
                   {subdistrict.map((item) => (
-                    <Select.Option key={item.id} value={item.id}>
-                      {item.name}
+                    <Select.Option key={item.ID} value={item.ID}>
+                      {item.NameTh}
                     </Select.Option>
                   ))}
                 </Select>

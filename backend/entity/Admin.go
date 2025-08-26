@@ -9,7 +9,6 @@ type Admin struct {
 	gorm.Model
 	Firstname	string
 	Lastname	string
-	Username 	string
 	Email		string
 	Password 	string
 	Birthday	time.Time

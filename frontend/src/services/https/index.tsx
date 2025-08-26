@@ -31,15 +31,16 @@ async function GetProvince() {
     .then((res) => res)
     .catch((e) => e.response);
 }
-async function GetDistrict() {
+async function GetDistrict(provinceId: number) {
   return await axios
-    .get(`${apiUrl}/district`, requestOptions)
+    .get(`${apiUrl}/district?province_id=${provinceId}`, requestOptions)
     .then((res) => res)
     .catch((e) => e.response);
 }
-async function GetSubdistrict() {
+
+async function GetSubdistrict(districtId: number) {
   return await axios
-    .get(`${apiUrl}/subdistrict`, requestOptions)
+    .get(`${apiUrl}/subdistrict?district_id=${districtId}`, requestOptions)
     .then((res) => res)
     .catch((e) => e.response);
 }
@@ -114,7 +115,7 @@ async function DeleteAccommodationById(id: string) {
 }
 
 
-async function CreateAccommodation(data: AdminInterface) {
+async function CreateAccommodation(data: AccommodationInterface) {
   return await axios
     .post(`${apiUrl}/accommodation`, data, requestOptions)
     .then((res) => res)
