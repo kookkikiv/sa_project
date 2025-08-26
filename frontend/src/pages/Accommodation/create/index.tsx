@@ -67,18 +67,26 @@ function AccommodationCreate() {
   };
 
   const onFinish = async (values: AccommodationInterface) => {
-    let res = await CreateAccommodation(values);
-
-    if (res.status === 201) {
-      messageApi.success(res.data.message);
-      setTimeout(() => {
-        navigate("/accommodation");
-      }, 2000);
-    } else {
-      messageApi.error(res.data.error);
-    }
+  // เพิ่ม AdminID จาก localStorage
+  const adminId = localStorage.getItem("id");
+  
+  let payload = {
+    ...values,
+    AdminID: adminId ? parseInt(adminId) : undefined
   };
 
+  let res = await CreateAccommodation(payload); // สำหรับ Create
+  // หรือ let res = await UpdateAccommodationById(id, payload); สำหรับ Edit
+
+  if (res.status === 201 || res.status === 200) { // 201 สำหรับ Create, 200 สำหรับ Update
+    messageApi.success(res.data.message);
+    setTimeout(() => {
+      navigate("/accommodation");
+    }, 2000);
+  } else {
+    messageApi.error(res.data.error);
+  }
+};
   useEffect(() => {
     onGetProvince();
   }, []);

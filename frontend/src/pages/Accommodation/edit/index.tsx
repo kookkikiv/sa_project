@@ -25,7 +25,6 @@ import {
   UpdateAccommodationById,
 } from "../../../services/https";
 import { useNavigate, Link, useParams } from "react-router-dom";
-import dayjs from "dayjs";
 
 function AccommodationEdit() {
   const navigate = useNavigate();
@@ -87,51 +86,60 @@ function AccommodationEdit() {
   };
 
   const getAccommodationById = async (id: string) => {
-    let res = await GetAccommodationById(id);
-    if (res.status == 200) {
-      form.setFieldsValue({
-        first_name: res.data.first_name,
-        last_name: res.data.last_name,
-        email: res.data.email,
-        birthday: dayjs(res.data.birthday),
-        age: res.data.age,
-        gender_id: res.data.gender?.ID,
-      });
-    } else {
-      messageApi.open({
-        type: "error",
-        content: "ไม่พบข้อมูลผู้ใช้",
-      });
-
-      setTimeout(() => {
-        navigate("/accommodation");
-      }, 2000);
+  let res = await GetAccommodationById(id);
+  if (res.status == 200) {
+    form.setFieldsValue({
+      Name: res.data.Name,
+      Type: res.data.Type,
+      Status: res.data.Status,
+      Province: res.data.ProvinceID,
+      District: res.data.DistrictID,
+      Subdistrict: res.data.SubdistrictID,
+    });
+    
+    // โหลดข้อมูล District และ Subdistrict ตาม Province และ District ที่มีอยู่
+    if (res.data.ProvinceID) {
+      setSelectedProvince(res.data.ProvinceID);
+      await onGetDistrict(res.data.ProvinceID);
+      
+      if (res.data.DistrictID) {
+        setSelectedDistrict(res.data.DistrictID);
+        await onGetSubdistrict(res.data.DistrictID);
+      }
     }
+  } else {
+    messageApi.open({
+      type: "error",
+      content: "ไม่พบข้อมูลที่พัก",
+    });
+
+    setTimeout(() => {
+      navigate("/accommodation");
+    }, 2000);
+  }
+};
+
+const onFinish = async (values: AccommodationInterface) => {
+  // เพิ่ม AdminID จาก localStorage
+  const adminId = localStorage.getItem("id");
+  
+  let payload = {
+    ...values,
+    AdminID: adminId ? parseInt(adminId) : undefined
   };
 
-  const onFinish = async (values: AccommodationInterface) => {
-    let payload = {
-      ...values,
-    };
+  let res = await UpdateAccommodationById(id,payload); // สำหรับ Create
+  // หรือ let res = await UpdateAccommodationById(id, payload); สำหรับ Edit
 
-    const res = await UpdateAccommodationById(id, payload);
-    if (res.status == 200) {
-      messageApi.open({
-        type: "success",
-        content: res.data.message,
-      });
-
-      setTimeout(() => {
-        navigate("/accommodation");
-      }, 2000);
-    } else {
-      messageApi.open({
-        type: "error",
-        content: res.data.error,
-      });
-    }
-  };
-
+  if (res.status === 201 || res.status === 200) { // 201 สำหรับ Create, 200 สำหรับ Update
+    messageApi.success(res.data.message);
+    setTimeout(() => {
+      navigate("/accommodation");
+    }, 2000);
+  } else {
+    messageApi.error(res.data.error);
+  }
+};
   useEffect(() => {
     onGetProvince();
     getAccommodationById(id);
@@ -204,7 +212,7 @@ function AccommodationEdit() {
             <Col xs={24} sm={24} md={24} lg={12}>
               <Form.Item
                 label="จังหวัด"
-                name="Province"
+                name="ProvinceID"
                 rules={[{ required: true, message: "กรุณาเลือกจังหวัด !" }]}
               >
                 <Select
@@ -230,7 +238,7 @@ function AccommodationEdit() {
             <Col xs={24} sm={24} md={24} lg={12}>
               <Form.Item
                 label="อำเภอ"
-                name="District"
+                name="DistrictID"
                 rules={[{ required: true, message: "กรุณาเลือกอำเภอ !" }]}
               >
                 <Select
@@ -255,7 +263,7 @@ function AccommodationEdit() {
             <Col xs={24} sm={24} md={24} lg={12}>
               <Form.Item
                 label="ตำบล"
-                name="Subdistrict"
+                name="SubdistrictID"
                 rules={[{ required: true, message: "กรุณาเลือกตำบล !" }]}
               >
                 <Select placeholder="เลือกตำบล" disabled={!selectedDistrict} allowClear>

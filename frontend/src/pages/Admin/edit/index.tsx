@@ -162,7 +162,7 @@ function AdminEdit() {
             <Col style={{ marginTop: "40px" }}>
               <Form.Item>
                 <Space>
-                  <Link to="/customer">
+                  <Link to="/admin">
                     <Button htmlType="button" style={{ marginRight: "10px" }}>
                       ยกเลิก
                     </Button>

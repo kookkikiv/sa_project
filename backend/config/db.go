@@ -53,7 +53,6 @@ func SetupDatabase() {
     hashedPassword, _ := HashPassword("123456")
     BirthDay, _ := time.Parse("2006-01-02", "1988-11-12")
     Admin := &entity.Admin{
-        Username: 	"SA",
         Password:  hashedPassword,
         Firstname: "Software",
         Lastname:  "Analysis",

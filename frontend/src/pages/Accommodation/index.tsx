@@ -56,7 +56,7 @@ function Accommodation() {
           <Button
             type="primary"
             icon={<DeleteOutlined />}
-            onClick={() => navigate(`/customer/edit/${record.ID}`)}
+            onClick={() => navigate(`/accommodation/edit/${record.ID}`)}
           >
             แก้ไขข้อมูล
           </Button>
