@@ -2,7 +2,7 @@ package entity
 
 import "gorm.io/gorm"
 
-// Provinces (รหัส 2 หลัก เช่น "10")
+
 type Province struct {
     gorm.Model
     ProvinceCode string `gorm:"size:2;not null;uniqueIndex" json:"provinceCode"`
