@@ -6,13 +6,12 @@ import (
 	"github.com/kookkikiv/sa_project/backend/controller"
 )
 
-const PORT = "8088"
+const PORT = "8000" // ✅ เปลี่ยนเป็น 8000 ให้ตรงกับ Frontend
 
 func main() {
 	// Database setup
 	config.ConnectionDB()
 	config.SetupDatabase()
-
 
 	r := gin.Default()
 	r.POST("/import-thailand-all", controller.ImportThailandAll)
@@ -32,7 +31,6 @@ func main() {
 
 			locationRoutes.GET("/subdistricts", controller.FindSubdistricts)
 			locationRoutes.POST("/subdistricts", controller.CreateSubdistrict)
-
 		}
 
 		// Accommodation routes
@@ -40,6 +38,8 @@ func main() {
 		{
 			accommodationRoutes.GET("", controller.FindAccommodation)
 			accommodationRoutes.GET("/:id", controller.FindAccommodationId)
+			accommodationRoutes.POST("", controller.CreateAccommodation)        // ✅ เพิ่ม POST
+			accommodationRoutes.PUT("/:id", controller.UpdateAccommodationById) // ✅ เพิ่ม PUT
 			accommodationRoutes.DELETE("/:id", controller.DeleteAccommodationById)
 		}
 
@@ -65,14 +65,38 @@ func main() {
 			thailandRoutes.GET("/districts", controller.FindDistricts)
 			thailandRoutes.GET("/subdistricts", controller.FindSubdistricts)
 		}
+
+		// Admin routes ✅ เพิ่ม Admin routes
+		adminRoutes := api.Group("/admin")
+		{
+			adminRoutes.GET("", controller.FindAdmin)
+			adminRoutes.GET("/:id", controller.FindAdminById)
+			adminRoutes.DELETE("/:id", controller.DeleteAdminById)
+		}
 	}
 
 	// Legacy routes (backward compatibility)
 	legacy := r.Group("/")
 	{
+		// Authentication routes ✅ เพิ่ม Auth routes
+		legacy.POST("/signin", controller.SignIn)     // ต้องสร้าง controller นี้
+		legacy.POST("/signup", controller.CreateAdmin) // ใช้ CreateAdmin สำหรับ signup
+
+		// Location routes ✅ เพิ่ม Location routes
+		legacy.GET("/province", controller.FindProvinces)
+		legacy.GET("/district", controller.FindDistricts)
+		legacy.GET("/subdistrict", controller.FindSubdistricts)
+
+		// Admin routes
+		legacy.GET("/admin", controller.FindAdmin)
+		legacy.GET("/admin/:id", controller.FindAdminById)
+		legacy.DELETE("/admin/:id", controller.DeleteAdminById)
+
 		// Accommodation
 		legacy.GET("/accommodation", controller.FindAccommodation)
 		legacy.GET("/accommodation/:id", controller.FindAccommodationId)
+		legacy.POST("/accommodation", controller.CreateAccommodation)        // ✅ เพิ่ม POST
+		legacy.PUT("/accommodation/:id", controller.UpdateAccommodationById) // ✅ เพิ่ม PUT
 		legacy.DELETE("/accommodation/:id", controller.DeleteAccommodationById)
 
 		// Package
