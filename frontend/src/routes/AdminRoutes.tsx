@@ -38,7 +38,7 @@ const AdminRoutes = (isLoggedIn : boolean): RouteObject => {
           },
         ],
       },
-       {
+      {
         path: "/accommodation",
         children: [
           {

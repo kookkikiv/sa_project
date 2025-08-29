@@ -123,15 +123,20 @@ const onFinish = async (values: AccommodationInterface) => {
   // เพิ่ม AdminID จาก localStorage
   const adminId = localStorage.getItem("id");
   
+  // ✅ แก้ไข field names ให้ตรงกับ Backend
   let payload = {
-    ...values,
+    Name: values.Name,
+    Type: values.Type,
+    Status: values.Status,
+    ProvinceID: values.ProvinceID,    // ✅ ใช้ ProvinceID ตรงๆ
+    DistrictID: values.DistrictID,    // ✅ ใช้ DistrictID ตรงๆ  
+    SubdistrictID: values.SubdistrictID, // ✅ ใช้ SubdistrictID ตรงๆ
     AdminID: adminId ? parseInt(adminId) : undefined
   };
 
-  let res = await UpdateAccommodationById(id,payload); // สำหรับ Create
-  // หรือ let res = await UpdateAccommodationById(id, payload); สำหรับ Edit
+  let res = await UpdateAccommodationById(id, payload);
 
-  if (res.status === 201 || res.status === 200) { // 201 สำหรับ Create, 200 สำหรับ Update
+  if (res.status === 200) {
     messageApi.success(res.data.message);
     setTimeout(() => {
       navigate("/accommodation");

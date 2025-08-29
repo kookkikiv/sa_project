@@ -66,19 +66,24 @@ function AccommodationCreate() {
     }
   };
 
-  const onFinish = async (values: AccommodationInterface) => {
+const onFinish = async (values: AccommodationInterface) => {
   // เพิ่ม AdminID จาก localStorage
   const adminId = localStorage.getItem("id");
   
+  // ✅ แก้ไข field names ให้ตรงกับ Backend
   let payload = {
-    ...values,
+    Name: values.Name,
+    Type: values.Type,
+    Status: values.Status,
+    ProvinceID: values.ProvinceID,      
+    DistrictID: values.DistrictID,      
+    SubdistrictID: values.SubdistrictID, 
     AdminID: adminId ? parseInt(adminId) : undefined
   };
 
-  let res = await CreateAccommodation(payload); // สำหรับ Create
-  // หรือ let res = await UpdateAccommodationById(id, payload); สำหรับ Edit
+  let res = await CreateAccommodation(payload);
 
-  if (res.status === 201 || res.status === 200) { // 201 สำหรับ Create, 200 สำหรับ Update
+  if (res.status === 201) {
     messageApi.success(res.data.message);
     setTimeout(() => {
       navigate("/accommodation");

@@ -6,7 +6,7 @@ import (
 	"github.com/kookkikiv/sa_project/backend/controller"
 )
 
-const PORT = "8000" // ✅ เปลี่ยนเป็น 8000 ให้ตรงกับ Frontend
+const PORT = "8000"
 
 func main() {
 	// Database setup

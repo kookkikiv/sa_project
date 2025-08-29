@@ -1,13 +1,16 @@
 import React, { useState } from "react";
 import { Routes, Route, Link } from "react-router-dom";
 import "../../App.css";
-import { UserOutlined, DashboardOutlined } from "@ant-design/icons";
+import { UserOutlined, DashboardOutlined ,HomeOutlined,GlobalOutlined } from "@ant-design/icons";
 import { Breadcrumb, Layout, Menu, theme, Button, message } from "antd";
 import logo from "../../assets/logo.png";
 import Dashboard from "../../pages/dashboard";
 import Admin from "../../pages/Admin";
 import AdminCreate from "../../pages/Admin/create";
 import AdminEdit from "../../pages/Admin/edit";
+import Accommodation from "../../pages/Accommodation";
+import AccommodationCreate from "../../pages/Accommodation/create";
+import AccommodationEdit from "../../pages/Accommodation/edit";
 
 const { Header, Content, Footer, Sider } = Layout;
 
@@ -68,27 +71,30 @@ const FullLayout: React.FC = () => {
               theme="dark"
               defaultSelectedKeys={[page ? page : "dashboard"]}
               mode="inline"
+              items={items}
             >
-
-              <Menu.Item
-                key="dashboard"
-                onClick={() => setCurrentPage("dashboard")}
-              >
-                <Link to="/">
-                  <DashboardOutlined />
-                  <span>แดชบอร์ด</span>
-                </Link>
-              </Menu.Item>
-
-              <Menu.Item
-                key="admin"
-                onClick={() => setCurrentPage("admin")}
-              >
-                <Link to="/admin">
-                  <UserOutlined />
-                  <span>ข้อมูลสมาชิก</span>
-                </Link>
-              </Menu.Item>
+              const items = [
+                {
+                  key:"dashboard",
+                  icon:<DashboardOutlined/>,
+                  label:<Link to="/">แดชบอร์ด</Link>,
+                  onClick:() => setCurrentPage("dashboard"),
+                },
+                {
+                  key:"admin",
+                  icon:<UserOutlined />,
+                  label:<Link to="/admin">ข้อมูลสมาชิก</Link>,
+                  onClick:() => setCurrentPage("admin"),
+                },
+                {
+                  key:"accommodaation",
+                  icon:<HomeOutlined  />,
+                  label:<Link to="/accommodaation">ข้อมูลที่พัก</Link>,
+                  onClick:() => setCurrentPage("accommodaation"),
+                },
+                
+              ]
+              <Menu items={items} />
             </Menu>
           </div>
 
@@ -113,6 +119,9 @@ const FullLayout: React.FC = () => {
               <Route path="/admin" element={<Admin />} />
               <Route path="/admin/create" element={<AdminCreate />} />
               <Route path="/admin/edit/:id" element={<AdminEdit />} />
+              <Route path="/accommodation" element={<Accommodation />} />
+              <Route path="/accommodation/create" element={<Accommodation Create />} />
+              <Route path="/accommodation/edit/:id" element={<AccommodationEdit />} />
             </Routes>
           </div>
         </Content>
