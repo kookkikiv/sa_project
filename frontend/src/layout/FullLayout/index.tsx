@@ -1,7 +1,7 @@
 import React, { useState } from "react";
 import { Routes, Route, Link } from "react-router-dom";
 import "../../App.css";
-import { UserOutlined, DashboardOutlined ,HomeOutlined,GlobalOutlined } from "@ant-design/icons";
+import { UserOutlined, DashboardOutlined, HomeOutlined, GlobalOutlined } from "@ant-design/icons";
 import { Breadcrumb, Layout, Menu, theme, Button, message } from "antd";
 import logo from "../../assets/logo.png";
 import Dashboard from "../../pages/dashboard";
@@ -35,6 +35,28 @@ const FullLayout: React.FC = () => {
     }, 2000);
   };
 
+  // แก้ไข: ย้าย items ออกมาข้างนอก และแก้ไข syntax
+  const items = [
+    {
+      key: "dashboard",
+      icon: <DashboardOutlined />,
+      label: <Link to="/">แดชบอร์ด</Link>,
+      onClick: () => setCurrentPage("dashboard"),
+    },
+    {
+      key: "admin",
+      icon: <UserOutlined />,
+      label: <Link to="/admin">ข้อมูลสมาชิก</Link>,
+      onClick: () => setCurrentPage("admin"),
+    },
+    {
+      key: "accommodation", // แก้ไขการสะกด
+      icon: <HomeOutlined />,
+      label: <Link to="/accommodation">ข้อมูลที่พัก</Link>, // แก้ไข path
+      onClick: () => setCurrentPage("accommodation"),
+    },
+  ];
+
   return (
     <Layout style={{ minHeight: "100vh" }}>
       {contextHolder}
@@ -67,35 +89,13 @@ const FullLayout: React.FC = () => {
               />
             </div>
 
+            {/* แก้ไข: ใช้ Menu component อย่างเดียว */}
             <Menu
               theme="dark"
               defaultSelectedKeys={[page ? page : "dashboard"]}
               mode="inline"
               items={items}
-            >
-              const items = [
-                {
-                  key:"dashboard",
-                  icon:<DashboardOutlined/>,
-                  label:<Link to="/">แดชบอร์ด</Link>,
-                  onClick:() => setCurrentPage("dashboard"),
-                },
-                {
-                  key:"admin",
-                  icon:<UserOutlined />,
-                  label:<Link to="/admin">ข้อมูลสมาชิก</Link>,
-                  onClick:() => setCurrentPage("admin"),
-                },
-                {
-                  key:"accommodaation",
-                  icon:<HomeOutlined  />,
-                  label:<Link to="/accommodaation">ข้อมูลที่พัก</Link>,
-                  onClick:() => setCurrentPage("accommodaation"),
-                },
-                
-              ]
-              <Menu items={items} />
-            </Menu>
+            />
           </div>
 
           <Button onClick={Logout} style={{ margin: 4 }}>
@@ -120,7 +120,7 @@ const FullLayout: React.FC = () => {
               <Route path="/admin/create" element={<AdminCreate />} />
               <Route path="/admin/edit/:id" element={<AdminEdit />} />
               <Route path="/accommodation" element={<Accommodation />} />
-              <Route path="/accommodation/create" element={<Accommodation Create />} />
+              <Route path="/accommodation/create" element={<AccommodationCreate />} />
               <Route path="/accommodation/edit/:id" element={<AccommodationEdit />} />
             </Routes>
           </div>
@@ -128,7 +128,7 @@ const FullLayout: React.FC = () => {
 
         <Footer style={{ textAlign: "center" }}>
           System Analysis and Design        
-          </Footer>
+        </Footer>
       </Layout>
     </Layout>
   );

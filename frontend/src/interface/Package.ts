@@ -8,5 +8,6 @@ export interface PackageInterface{
     ProvinceID?:    number;
     DistrictID?:    number;
     SubdistrictID?: number;
+    GuideID?:       number;
     AdminID?:       number;  
 }

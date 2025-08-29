@@ -1,8 +1,8 @@
 export interface AdminInterface {
   ID?: number;
-  FirstName?: string;
-  LastName?: string;
+  Firstname?: string;
+  Lastname?: string;
   Email?: string;
   Password?: string;
-  BirthDay?: string;
+  Birthday?: string;
 }

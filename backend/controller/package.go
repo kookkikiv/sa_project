@@ -1,158 +1,123 @@
-package controller
+import React, { useState } from "react";
+import { Outlet, Link } from "react-router-dom";
+import "../../App.css";
+import { UserOutlined, DashboardOutlined, HomeOutlined, GlobalOutlined } from "@ant-design/icons";
+import { Breadcrumb, Layout, Menu, theme, Button, message } from "antd";
+import logo from "../../assets/logo.png";
 
-import (
-	"net/http"
-	"github.com/kookkikiv/sa_project/backend/config"
-	"github.com/kookkikiv/sa_project/backend/entity"
-	"github.com/gin-gonic/gin"
-)
+const { Header, Content, Footer, Sider } = Layout;
 
-// POST /new-package
-func CreatePackage(c *gin.Context) {
-    var body entity.Package
+const FullLayout: React.FC = () => {
+  const page = localStorage.getItem("page");
+  const [messageApi, contextHolder] = message.useMessage();
+  const [collapsed, setCollapsed] = useState(false);
 
-    if err := c.ShouldBindJSON(&body); err != nil {
-        c.JSON(http.StatusBadRequest, gin.H{
-            "error": "Invalid JSON format",
-            "details": err.Error(),
-        })
-        return
-    }
+  const {
+    token: { colorBgContainer },
+  } = theme.useToken();
 
-    db := config.DB()
+  const setCurrentPage = (val: string) => {
+    localStorage.setItem("page", val);
+  };
 
-    // ตรวจสอบ required fields
-    if body.GuideID == nil || body.AdminID == nil {
-        c.JSON(http.StatusBadRequest, gin.H{
-            "error": "GuideID and AdminID are required",
-        })
-        return
-    }
+  const Logout = () => {
+    localStorage.clear();
+    messageApi.success("Logout successful");
+    setTimeout(() => {
+      location.href = "/";
+    }, 2000);
+  };
 
-    // ตรวจสอบ relationships ใน transaction
-    tx := db.Begin()
-    defer func() {
-        if r := recover(); r != nil {
-            tx.Rollback()
-        }
-    }()
+  // แก้ไข: ย้าย items ออกมาข้างนอก และแก้ไข syntax
+  const items = [
+    {
+      key: "dashboard",
+      icon: <DashboardOutlined />,
+      label: <Link to="/">แดชบอร์ด</Link>,
+      onClick: () => setCurrentPage("dashboard"),
+    },
+    {
+      key: "admin",
+      icon: <UserOutlined />,
+      label: <Link to="/admin">ข้อมูลสมาชิก</Link>,
+      onClick: () => setCurrentPage("admin"),
+    },
+    {
+      key: "accommodation", // แก้ไขการสะกด
+      icon: <HomeOutlined />,
+      label: <Link to="/accommodation">ข้อมูลที่พัก</Link>, // แก้ไข path
+      onClick: () => setCurrentPage("accommodation"),
+    },
+  ];
 
-    var guide entity.Guide
-    if err := tx.Where("id = ?", body.GuideID).First(&guide).Error; err != nil {
-        tx.Rollback()
-        c.JSON(http.StatusBadRequest, gin.H{"error": "Guide not found"})
-        return
-    }
+  return (
+    <Layout style={{ minHeight: "100vh" }}>
+      {contextHolder}
+      <Sider
+        collapsible
+        collapsed={collapsed}
+        onCollapse={(value) => setCollapsed(value)}
+      >
+        <div
+          style={{
+            display: "flex",
+            flexDirection: "column",
+            justifyContent: "space-between",
+            height: "100%",
+          }}
+        >
+          <div>
+            <div
+              style={{
+                display: "flex",
+                justifyContent: "center",
+                marginTop: 20,
+                marginBottom: 20,
+              }}
+            >
+              <img
+                src={logo}
+                alt="Logo"
+                style={{ width: "80%" }}
+              />
+            </div>
 
-    var admin entity.Admin
-    if err := tx.Where("id = ?", body.AdminID).First(&admin).Error; err != nil {
-        tx.Rollback()
-        c.JSON(http.StatusBadRequest, gin.H{"error": "Admin not found"})
-        return
-    }
+            {/* แก้ไข: ใช้ Menu component อย่างเดียว */}
+            <Menu
+              theme="dark"
+              defaultSelectedKeys={[page ? page : "dashboard"]}
+              mode="inline"
+              items={items}
+            />
+          </div>
 
-    if err := tx.Create(&body).Error; err != nil {
-        tx.Rollback()
-        c.JSON(http.StatusInternalServerError, gin.H{
-            "error": "Failed to create package",
-            "details": err.Error(),
-        })
-        return
-    }
+          <Button onClick={Logout} style={{ margin: 4 }}>
+            ออกจากระบบ
+          </Button>
+        </div>
+      </Sider>
+      <Layout>
+        <Header style={{ padding: 0, background: colorBgContainer }} />
+        <Content style={{ margin: "0 16px" }}>
+          <Breadcrumb style={{ margin: "16px 0" }} />
+          <div
+            style={{
+              padding: 24,
+              minHeight: "100%",
+              background: colorBgContainer,
+            }}
+          >
+            {/* ลบ nested Routes ออก - ให้ AdminRoutes จัดการแทน */}
+            <Outlet />
+          </div>
+        </Content>
 
-    tx.Commit()
-    c.JSON(http.StatusCreated, gin.H{
-        "data": body, 
-        "message": "Package created successfully",
-    })
-}
-// GET /package
-func FindPackage(c *gin.Context) {
-    var packages []entity.Package
+        <Footer style={{ textAlign: "center" }}>
+          System Analysis and Design        
+        </Footer>
+      </Layout>
+    </Layout>
+  );
+};
 
-    db := config.DB()
-    
-    // Preload ที่ถูกต้อง
-    query := db.Preload("Guide").
-        Preload("Admin").
-        Preload("Province").
-        Preload("District").
-        Preload("Subdistrict").
-        Preload("Pac_Event").
-        Preload("Pac_Event.Event").
-        Preload("Pac_Acc").
-        Preload("Pac_Acc.Accommodation")
-    
-    accommodationId := c.Query("accommodation_id")
-    if accommodationId != "" {
-        // Join กับ pac_accs table เพื่อ filter
-        query = query.Joins("JOIN pac_accs ON pac_accs.package_id = packages.id").
-            Where("pac_accs.accommodation_id = ?", accommodationId)
-    }
-    
-    if err := query.Find(&packages).Error; err != nil {
-        c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
-        return
-    }
-
-    c.JSON(http.StatusOK, gin.H{"data": packages})
-}
-// PUT /package/update
-func UpdatePackage(c *gin.Context) {
-	var updateData entity.Package
-	
-	// Bind JSON data
-	if err := c.ShouldBindJSON(&updateData); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "Bad request body: " + err.Error()})
-		return
-	}
-
-	// ตรวจสอบว่า package มีอยู่จริง
-	var existingPackage entity.Package
-	if err := config.DB().Where("id = ?", updateData.ID).First(&existingPackage).Error; err != nil {
-		c.JSON(http.StatusNotFound, gin.H{"error": "Package not found"})
-		return
-	}
-
-	// อัปเดตข้อมูล
-	if err := config.DB().Model(&existingPackage).Updates(&updateData).Error; err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to update package: " + err.Error()})
-		return
-	}
-
-	c.JSON(http.StatusOK, gin.H{"data": existingPackage, "message": "Package updated successfully"})
-}
-
-// GET /package/:id
-func FindPackageById(c *gin.Context) {
-	var pack entity.Package
-	id := c.Param("id")
-	
-	// แก้ไข Preload ให้ตรงกับ entity จริง
-	if err := config.DB().Preload("Guide").Preload("Admin").Preload("Accommodation").Preload("Event").Where("id = ?", id).First(&pack).Error; err != nil {
-		c.JSON(http.StatusNotFound, gin.H{"error": "Package not found"})
-		return
-	}
-
-	c.JSON(http.StatusOK, gin.H{"data": pack})
-}
-
-// DELETE /package/:id
-func DeletePackageById(c *gin.Context) {
-	id := c.Param("id")
-	
-	// ตรวจสอบว่า package มีอยู่จริงก่อนลบ
-	var pack entity.Package
-	if err := config.DB().Where("id = ?", id).First(&pack).Error; err != nil {
-		c.JSON(http.StatusNotFound, gin.H{"error": "Package not found"})
-		return
-	}
-	
-	// ลบ package ที่ถูกต้อง (แก้จาก sounds เป็น packages)
-	if err := config.DB().Delete(&pack, id).Error; err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to delete package"})
-		return
-	}
-
-	c.JSON(http.StatusOK, gin.H{"message": "Package deleted successfully"})
-}
+export default FullLayout;
