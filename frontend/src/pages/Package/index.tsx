@@ -59,11 +59,11 @@ function Package() {
         setAcc(list as PackageInterface[]);
       } else {
         setAcc([]);
-        messageApi.error(res.data?.error ?? "ไม่สามารถดึงข้อมูลที่พักได้");
+        messageApi.error(res.data?.error ?? "ไม่สามารถดึงข้อมูลแพ็คเกจได้");
       }
     } catch (e) {
       setAcc([]);
-      messageApi.error("เกิดข้อผิดพลาดในการดึงข้อมูลที่พัก");
+      messageApi.error("เกิดข้อผิดพลาดในการดึงข้อมูลแพ็คเกจ");
     } finally {
       setLoading(false);
     }
@@ -100,7 +100,7 @@ function Package() {
       width: 100,
     },
     {
-      title: "ชื่อที่พัก",
+      title: "ชื่อแพ็คเกจ",
       dataIndex: "Name",
       key: "Name",
     },
@@ -137,7 +137,7 @@ function Package() {
 
       <Row gutter={[16, 16]}>
         <Col span={12}>
-          <h2 style={{ margin: 0 }}>จัดการข้อมูลที่พัก</h2>
+          <h2 style={{ margin: 0 }}>จัดการข้อมูลแพ็คเกจ</h2>
         </Col>
         <Col span={12} style={{ textAlign: "end", alignSelf: "center" }}>
           <Space>

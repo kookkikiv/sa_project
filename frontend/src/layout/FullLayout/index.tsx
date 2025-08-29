@@ -58,7 +58,7 @@ const FullLayout: React.FC = () => {
     {
       key: "package", // แก้ไขการสะกด
       icon: <GlobalOutlined />,
-      label: <Link to="/package">ข้อมูลที่พัก</Link>, // แก้ไข path
+      label: <Link to="/package">ข้อมูลแพ็คเกจ</Link>, // แก้ไข path
       onClick: () => setCurrentPage("package"),
     },
   ];

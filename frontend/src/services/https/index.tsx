@@ -4,6 +4,7 @@ import { type AccommodationInterface } from "../../interface/Accommodation";
 import { type PackageInterface } from "../../interface/Package";
 import { type RoomInterface } from "../../interface/Room";
 import { type FacilityInterface } from "../../interface/Facility";
+
 import axios from "axios";
 const apiUrl = "http://localhost:8000";
 const Authorization = localStorage.getItem("token");
@@ -41,6 +42,12 @@ async function GetDistrict(provinceId: number) {
 async function GetSubdistrict(districtId: number) {
   return await axios
     .get(`${apiUrl}/subdistrict?district_id=${districtId}`, requestOptions)
+    .then((res) => res)
+    .catch((e) => e.response);
+}
+async function GetGuide() {
+  return await axios
+    .get(`${apiUrl}/guide`, requestOptions)
     .then((res) => res)
     .catch((e) => e.response);
 }
@@ -241,6 +248,7 @@ export {
   GetProvince,
   GetDistrict,
   GetSubdistrict,
+  GetGuide,
   GetAdmin,
   GetAdminById,
   UpdateAdminById,
