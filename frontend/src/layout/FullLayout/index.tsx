@@ -1,7 +1,7 @@
 import React, { useState } from "react";
 import { Routes, Route, Link } from "react-router-dom";
 import "../../App.css";
-import { UserOutlined, DashboardOutlined, HomeOutlined, GlobalOutlined } from "@ant-design/icons";
+import { UserOutlined, DashboardOutlined, HomeOutlined,GlobalOutlined } from "@ant-design/icons";
 import { Breadcrumb, Layout, Menu, theme, Button, message } from "antd";
 import logo from "../../assets/logo.png";
 import Dashboard from "../../pages/dashboard";
@@ -54,6 +54,12 @@ const FullLayout: React.FC = () => {
       icon: <HomeOutlined />,
       label: <Link to="/accommodation">ข้อมูลที่พัก</Link>, // แก้ไข path
       onClick: () => setCurrentPage("accommodation"),
+    },
+    {
+      key: "package", // แก้ไขการสะกด
+      icon: <GlobalOutlined />,
+      label: <Link to="/package">ข้อมูลที่พัก</Link>, // แก้ไข path
+      onClick: () => setCurrentPage("package"),
     },
   ];
 

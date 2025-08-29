@@ -26,83 +26,128 @@ import { useNavigate, Link } from "react-router-dom";
 
 function AccommodationCreate() {
   const navigate = useNavigate();
+  const [form] = Form.useForm<AccommodationInterface>();
   const [messageApi, contextHolder] = message.useMessage();
 
   const [province, setProvince] = useState<ProvinceInterface[]>([]);
   const [district, setDistrict] = useState<DistrictInterface[]>([]);
   const [subdistrict, setSubdistrict] = useState<SubdistrictInterface[]>([]);
 
+  const [loadingProvince, setLoadingProvince] = useState(false);
+  const [loadingDistrict, setLoadingDistrict] = useState(false);
+  const [loadingSubdistrict, setLoadingSubdistrict] = useState(false);
+
   const [selectedProvince, setSelectedProvince] = useState<number | null>(null);
   const [selectedDistrict, setSelectedDistrict] = useState<number | null>(null);
 
+  // --- Helpers: safe array extraction from API ---
+  const asArray = <T,>(val: any): T[] =>
+    Array.isArray(val) ? (val as T[]) :
+    Array.isArray(val?.data) ? (val.data as T[]) :
+    Array.isArray(val?.items) ? (val.items as T[]) : [];
+
   // โหลดจังหวัด
   const onGetProvince = async () => {
-    let res = await GetProvince();
-    if (res.status === 200) {
-      setProvince(res.data);
-    } else {
-      messageApi.error("ไม่พบข้อมูลจังหวัด");
+    try {
+      setLoadingProvince(true);
+      const res = await GetProvince();
+      if (res.status === 200) {
+        setProvince(asArray<ProvinceInterface>(res.data));
+      } else {
+        setProvince([]);
+        messageApi.error(res?.data?.error ?? "ไม่พบข้อมูลจังหวัด");
+        navigate("/accommodation");
+      }
+    } catch (e) {
+      setProvince([]);
+      messageApi.error("เกิดข้อผิดพลาดในการโหลดจังหวัด");
       navigate("/accommodation");
+    } finally {
+      setLoadingProvince(false);
     }
   };
 
   // โหลดอำเภอตามจังหวัด
   const onGetDistrict = async (provinceId: number) => {
-    let res = await GetDistrict(provinceId);
-    if (res.status === 200) {
-      setDistrict(res.data);
-    } else {
-      messageApi.error("ไม่พบข้อมูลอำเภอ");
+    try {
+      setLoadingDistrict(true);
+      const res = await GetDistrict(provinceId);
+      if (res.status === 200) {
+        setDistrict(asArray<DistrictInterface>(res.data));
+      } else {
+        setDistrict([]);
+        messageApi.error(res?.data?.error ?? "ไม่พบข้อมูลอำเภอ");
+      }
+    } catch (e) {
+      setDistrict([]);
+      messageApi.error("เกิดข้อผิดพลาดในการโหลดอำเภอ");
+    } finally {
+      setLoadingDistrict(false);
     }
   };
 
   // โหลดตำบลตามอำเภอ
   const onGetSubdistrict = async (districtId: number) => {
-    let res = await GetSubdistrict(districtId);
-    if (res.status === 200) {
-      setSubdistrict(res.data);
-    } else {
-      messageApi.error("ไม่พบข้อมูลตำบล");
+    try {
+      setLoadingSubdistrict(true);
+      const res = await GetSubdistrict(districtId);
+      if (res.status === 200) {
+        setSubdistrict(asArray<SubdistrictInterface>(res.data));
+      } else {
+        setSubdistrict([]);
+        messageApi.error(res?.data?.error ?? "ไม่พบข้อมูลตำบล");
+      }
+    } catch (e) {
+      setSubdistrict([]);
+      messageApi.error("เกิดข้อผิดพลาดในการโหลดตำบล");
+    } finally {
+      setLoadingSubdistrict(false);
     }
   };
 
-const onFinish = async (values: AccommodationInterface) => {
-  // เพิ่ม AdminID จาก localStorage
-  const adminId = localStorage.getItem("id");
-  
-  // ✅ แก้ไข field names ให้ตรงกับ Backend
-  let payload = {
-    Name: values.Name,
-    Type: values.Type,
-    Status: values.Status,
-    ProvinceID: values.ProvinceID,      
-    DistrictID: values.DistrictID,      
-    SubdistrictID: values.SubdistrictID, 
-    AdminID: adminId ? parseInt(adminId) : undefined
+  // Submit
+  const onFinish = async (values: AccommodationInterface) => {
+    try {
+      const adminId = localStorage.getItem("id");
+      const payload = {
+        Name: values.Name,
+        Type: values.Type,
+        Status: values.Status,
+        ProvinceID: values.ProvinceID,
+        DistrictID: values.DistrictID,
+        SubdistrictID: values.SubdistrictID,
+        AdminID: adminId ? parseInt(adminId, 10) : undefined,
+      };
+
+      const res = await CreateAccommodation(payload);
+      if (res.status === 201 || res.status === 200) {
+        messageApi.success(res?.data?.message ?? "บันทึกสำเร็จ");
+        navigate("/accommodation");
+      } else {
+        messageApi.error(res?.data?.error ?? "บันทึกไม่สำเร็จ");
+      }
+    } catch (e) {
+      messageApi.error("เกิดข้อผิดพลาดในการบันทึกข้อมูล");
+    }
   };
 
-  let res = await CreateAccommodation(payload);
-
-  if (res.status === 201) {
-    messageApi.success(res.data.message);
-    setTimeout(() => {
-      navigate("/accommodation");
-    }, 2000);
-  } else {
-    messageApi.error(res.data.error);
-  }
-};
   useEffect(() => {
-    onGetProvince();
+    void onGetProvince();
   }, []);
 
   return (
     <div>
       {contextHolder}
-      <Card>
+      <Card /* ถ้าเคยใช้ bordered ให้เปลี่ยนเป็น variant="outlined" ตาม antd v5 */>
         <h2>เพิ่มข้อมูล ที่พัก</h2>
         <Divider />
-        <Form name="basic" layout="vertical" onFinish={onFinish} autoComplete="off">
+        <Form
+          form={form}
+          name="accommodation-create"
+          layout="vertical"
+          onFinish={onFinish}
+          autoComplete="off"
+        >
           <Row gutter={[16, 0]}>
             {/* ชื่อที่พัก */}
             <Col xs={24} sm={24} md={24} lg={12}>
@@ -122,7 +167,7 @@ const onFinish = async (values: AccommodationInterface) => {
                 name="Type"
                 rules={[{ required: true, message: "กรุณาเลือกลักษณะที่พัก !" }]}
               >
-                <Select placeholder="เลือกประเภทที่พัก">
+                <Select placeholder="เลือกประเภทที่พัก" allowClear>
                   <Select.Option value="hotel">โรงแรม</Select.Option>
                   <Select.Option value="resort">รีสอร์ท</Select.Option>
                   <Select.Option value="hostel">โฮสเทล</Select.Option>
@@ -137,91 +182,100 @@ const onFinish = async (values: AccommodationInterface) => {
                 name="Status"
                 rules={[{ required: true, message: "กรุณาเลือกสถานะที่พัก !" }]}
               >
-                <Select placeholder="เลือกสถานะที่พัก">
+                <Select placeholder="เลือกสถานะที่พัก" allowClear>
                   <Select.Option value="open">เปิดใช้บริการ</Select.Option>
                   <Select.Option value="closed">ปิดปรับปรุง</Select.Option>
                 </Select>
               </Form.Item>
             </Col>
 
-            {/* จังหวัด */}
+            {/* จังหวัด - ใช้ชื่อฟิลด์ ProvinceID ให้ตรง backend */}
             <Col xs={24} sm={24} md={24} lg={12}>
               <Form.Item
                 label="จังหวัด"
-                name="Province"
-                rules={[{ required: true, message: "กรุณาเลือกจังหวัด !" }]}
-              >
-                <Select
-                  placeholder="เลือกจังหวัด"
-                  onChange={(value) => {
-                    setSelectedProvince(value);
-                    setSelectedDistrict(null);
-                    setSubdistrict([]);
-                    onGetDistrict(value);
-                  }}
-                  allowClear
-                >
-                  {province.map((item) => (
-                    <Select.Option key={item.ID} value={item.ID}>
-                      {item.NameTh}
-                    </Select.Option>
-                  ))}
-                </Select>
-              </Form.Item>
+  name="ProvinceID"
+  rules={[{ required: true, message: "กรุณาเลือกจังหวัด !" }]}
+>
+  <Select
+    placeholder="เลือกจังหวัด"
+    allowClear
+    loading={loadingProvince}
+    options={(Array.isArray(province) ? province : []).map((item) => ({
+      label: item.NameTh,   // ✅ แสดงชื่อจังหวัด
+      value: item.ID,       // ✅ ส่งค่า id กลับไปใน form
+    }))}
+    onChange={(value: number | null) => {
+      setSelectedProvince(value ?? null);
+      setSelectedDistrict(null);
+      setSubdistrict([]);
+      form.setFieldsValue({ DistrictID: undefined, SubdistrictID: undefined });
+      if (typeof value === "number") {
+        void onGetDistrict(value);
+      }
+    }}
+  />
+</Form.Item>
+
             </Col>
 
-            {/* อำเภอ */}
+            {/* อำเภอ - ใช้ชื่อฟิลด์ DistrictID */}
             <Col xs={24} sm={24} md={24} lg={12}>
               <Form.Item
                 label="อำเภอ"
-                name="District"
+                name="DistrictID"
                 rules={[{ required: true, message: "กรุณาเลือกอำเภอ !" }]}
               >
-                <Select
-                  placeholder="เลือกอำเภอ"
-                  onChange={(value) => {
-                    setSelectedDistrict(value);
-                    onGetSubdistrict(value);
-                  }}
-                  disabled={!selectedProvince}
-                  allowClear
-                >
-                  {district.map((item) => (
-                    <Select.Option key={item.ID} value={item.ID}>
-                      {item.NameTh}
-                    </Select.Option>
-                  ))}
-                </Select>
+<Select
+  placeholder="เลือกอำเภอ"
+  allowClear
+  disabled={!selectedProvince}
+  loading={loadingDistrict}
+  options={(Array.isArray(district) ? district : []).map((item) => ({
+    label: item.NameTh,
+    value: item.ID,
+  }))}
+  onChange={(value: number | null) => {
+    setSelectedDistrict(value ?? null);
+    form.setFieldsValue({ SubdistrictID: undefined });
+    if (typeof value === "number") {
+      void onGetSubdistrict(value);
+    } else {
+      setSubdistrict([]);
+    }
+  }}
+/>
+
               </Form.Item>
             </Col>
 
-            {/* ตำบล */}
+            {/* ตำบล - ใช้ชื่อฟิลด์ SubdistrictID */}
             <Col xs={24} sm={24} md={24} lg={12}>
               <Form.Item
                 label="ตำบล"
-                name="Subdistrict"
+                name="SubdistrictID"
                 rules={[{ required: true, message: "กรุณาเลือกตำบล !" }]}
               >
-                <Select placeholder="เลือกตำบล" disabled={!selectedDistrict} allowClear>
-                  {subdistrict.map((item) => (
-                    <Select.Option key={item.ID} value={item.ID}>
-                      {item.NameTh}
-                    </Select.Option>
-                  ))}
-                </Select>
+                <Select
+  placeholder="เลือกตำบล"
+  allowClear
+  disabled={!selectedDistrict}
+  loading={loadingSubdistrict}
+  options={(Array.isArray(subdistrict) ? subdistrict : []).map((item) => ({
+    label: item.NameTh,
+    value: item.ID,
+  }))}
+/>
               </Form.Item>
             </Col>
           </Row>
 
           {/* ปุ่ม */}
           <Row justify="end">
-            <Col style={{ marginTop: "40px" }}>
+            <Col style={{ marginTop: 40 }}>
               <Form.Item>
                 <Space>
                   <Link to="/accommodation">
-                    <Button htmlType="button" style={{ marginRight: "10px" }}>
-                      ยกเลิก
-                    </Button>
+                    <Button htmlType="button">ยกเลิก</Button>
                   </Link>
                   <Button type="primary" htmlType="submit" icon={<PlusOutlined />}>
                     ยืนยัน

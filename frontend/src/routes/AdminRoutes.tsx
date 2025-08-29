@@ -12,47 +12,29 @@ const Accommodation = Loadable(lazy(() => import("../pages/Accommodation")));
 const CreateAccommodation = Loadable(lazy(() => import("../pages/Accommodation/create")));
 const EditAccommodation = Loadable(lazy(() => import("../pages/Accommodation/edit")));
 
-const AdminRoutes = (isLoggedIn : boolean): RouteObject => {
+const AdminRoutes = (isLoggedIn: boolean): RouteObject => {
   return {
     path: "/",
     element: isLoggedIn ? <FullLayout /> : <MainPages />,
     children: [
+      // default page for "/"
+      { index: true, element: <Dashboard /> },
+
       {
-        path: "/",
-        element: <Dashboard />,
-      },
-      {
-        path: "/admin",
+        path: "admin",
         children: [
-          {
-            path: "/admin",
-            element: <Admin />,
-          },
-          {
-            path: "/admin/create",
-            element: <CreateAdmin />,
-          },
-          {
-            path: "/admin/edit/:id",
-            element: <EditAdmin />,
-          },
+          { index: true, element: <Admin /> },              // "/admin"
+          { path: "create", element: <CreateAdmin /> },     // "/admin/create"
+          { path: "edit/:id", element: <EditAdmin /> },     // "/admin/edit/:id"
         ],
       },
+
       {
-        path: "/accommodation",
+        path: "accommodation",
         children: [
-          {
-            path: "/accommodation",
-            element: <Accommodation />,
-          },
-          {
-            path: "/accommodation/create",
-            element: <CreateAccommodation />,
-          },
-          {
-            path: "/accommodation/edit/:id",
-            element: <EditAccommodation />,
-          },
+          { index: true, element: <Accommodation /> },          // "/accommodation"
+          { path: "create", element: <CreateAccommodation /> }, // "/accommodation/create"
+          { path: "edit/:id", element: <EditAccommodation /> }, // "/accommodation/edit/:id"
         ],
       },
     ],

@@ -55,7 +55,7 @@ export default function index() {
             <Row gutter={[16, 16]}>
               <Col xs={24} sm={24} md={12} lg={12} xl={6}>
                 <Card
-                  bordered={false}
+                  variant="borderless"
                   style={{
                     boxShadow: "rgba(100, 100, 111, 0.2) 0px 7px 29px 0px",
                   }}
@@ -70,7 +70,7 @@ export default function index() {
 
               <Col xs={24} sm={24} md={12} lg={12} xl={6}>
                 <Card
-                  bordered={false}
+                  variant="borderless"
                   style={{
                     boxShadow: "rgba(100, 100, 111, 0.2) 0px 7px 29px 0px",
                   }}
@@ -86,7 +86,7 @@ export default function index() {
 
               <Col xs={24} sm={24} md={12} lg={12} xl={6}>
                 <Card
-                  bordered={false}
+                  variant="borderless"
                   style={{
                     boxShadow: "rgba(100, 100, 111, 0.2) 0px 7px 29px 0px",
                   }}
@@ -102,7 +102,7 @@ export default function index() {
 
               <Col xs={24} sm={24} md={12} lg={12} xl={6}>
                 <Card
-                  bordered={false}
+                  variant="borderless"
                   style={{
                     boxShadow: "rgba(100, 100, 111, 0.2) 0px 7px 29px 0px",
                   }}

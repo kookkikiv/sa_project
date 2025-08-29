@@ -1,38 +1,103 @@
 import { useState, useEffect } from "react";
-import { Space, Table, Button, Col, Row, Divider, message } from "antd";
-import { PlusOutlined, DeleteOutlined } from "@ant-design/icons";
+import {
+  Space,
+  Table,
+  Button,
+  Col,
+  Row,
+  Divider,
+  message,
+  Popconfirm,
+} from "antd";
+import { PlusOutlined, DeleteOutlined, EditOutlined } from "@ant-design/icons";
 import type { ColumnsType } from "antd/es/table";
-import { GetAccommodation, DeleteAccommodationById } from "../../services/https/index";
+import {
+  GetAccommodation,
+  DeleteAccommodationById,
+} from "../../services/https/index";
 import { type AccommodationInterface } from "../../interface/Accommodation";
 import { Link, useNavigate } from "react-router-dom";
 
 function Accommodation() {
   const navigate = useNavigate();
-  const [acc, setacc] = useState<AccommodationInterface[]>([]);
+  const [acc, setAcc] = useState<AccommodationInterface[]>([]);
+  const [loading, setLoading] = useState<boolean>(false);
   const [messageApi, contextHolder] = message.useMessage();
-  const myId = localStorage.getItem("id");
+
+  // เก็บ id ของตัวเอง (string) ไว้เทียบกับ record.ID (แปลงเป็น string ตอนเทียบ)
+  const myId = localStorage.getItem("id") ?? "";
+
+  const deleteAccommodationById = async (id: string | number) => {
+    try {
+      const res = await DeleteAccommodationById(String(id));
+      if (res.status === 200) {
+        messageApi.success(res.data?.message ?? "ลบข้อมูลสำเร็จ");
+        await getAcc();
+      } else {
+        messageApi.error(res.data?.error ?? "ลบข้อมูลไม่สำเร็จ");
+      }
+    } catch (e) {
+      messageApi.error("เกิดข้อผิดพลาดในการลบข้อมูล");
+    }
+  };
+
+  const getAcc = async () => {
+    try {
+      setLoading(true);
+      const res = await GetAccommodation();
+      if (res.status === 200) {
+        // รองรับหลายรูปแบบผลลัพธ์จาก backend
+        const list =
+          Array.isArray(res.data)
+            ? res.data
+            : Array.isArray(res.data?.data)
+            ? res.data.data
+            : Array.isArray(res.data?.items)
+            ? res.data.items
+            : [];
+
+        setAcc(list as AccommodationInterface[]);
+      } else {
+        setAcc([]);
+        messageApi.error(res.data?.error ?? "ไม่สามารถดึงข้อมูลที่พักได้");
+      }
+    } catch (e) {
+      setAcc([]);
+      messageApi.error("เกิดข้อผิดพลาดในการดึงข้อมูลที่พัก");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    void getAcc();
+  }, []);
+
   const columns: ColumnsType<AccommodationInterface> = [
     {
       title: "",
-      render: (record) => (
-        <>
-          {myId == record?.ID ? (
-            <></>
-          ) : (
-            <Button
-              type="dashed"
-              danger
-              icon={<DeleteOutlined />}
-              onClick={() => deleteAccommodationById(record.ID)}
-            ></Button>
-          )}
-        </>
-      ),
+      width: 72,
+      render: (record) => {
+        const isMe = String(record?.ID ?? "") === myId;
+        if (isMe) return null;
+        return (
+          <Popconfirm
+            title="ยืนยันการลบ?"
+            description="คุณต้องการลบรายการนี้หรือไม่"
+            okText="ลบ"
+            cancelText="ยกเลิก"
+            onConfirm={() => deleteAccommodationById(record.ID as any)}
+          >
+            <Button type="dashed" danger icon={<DeleteOutlined />} />
+          </Popconfirm>
+        );
+      },
     },
     {
       title: "ลำดับ",
       dataIndex: "ID",
-      key: "id",
+      key: "ID",
+      width: 100,
     },
     {
       title: "ชื่อที่พัก",
@@ -43,72 +108,37 @@ function Accommodation() {
       title: "ประเภท",
       dataIndex: "Type",
       key: "Type",
+      width: 160,
     },
-        {
+    {
       title: "สถานะ",
       dataIndex: "Status",
       key: "Status",
+      width: 140,
     },
     {
       title: "",
+      width: 140,
       render: (record) => (
-        <>
-          <Button
-            type="primary"
-            icon={<DeleteOutlined />}
-            onClick={() => navigate(`/accommodation/edit/${record.ID}`)}
-          >
-            แก้ไขข้อมูล
-          </Button>
-        </>
+        <Button
+          type="primary"
+          icon={<EditOutlined />}
+          onClick={() => navigate(`/accommodation/edit/${record.ID}`)}
+        >
+          แก้ไขข้อมูล
+        </Button>
       ),
     },
   ];
 
-  const deleteAccommodationById = async (id: string) => {
-    let res = await DeleteAccommodationById(id);
-    
-    if (res.status == 200) {
-      messageApi.open({
-        type: "success",
-        content: res.data.message,
-      });
-      await getAcc();
-    } else {
-      messageApi.open({
-        type: "error",
-        content: res.data.error,
-      });
-    }
-  };
-
-  const getAcc = async () => {
-    let res = await GetAccommodation();
-
-    if (res.status == 200) {
-      setacc(res.data);
-    } else {
-      setacc([]);
-      messageApi.open({
-        type: "error",
-        content: res.data.error,
-      });
-    }
-  };
-
-
-  useEffect(() => {
-    getAcc();
-  }, []);
-
   return (
     <>
       {contextHolder}
-      <Row>
-        <Col span={12}>
-          <h2>จัดการข้อมูลที่พัก</h2>
-        </Col>
 
+      <Row gutter={[16, 16]}>
+        <Col span={12}>
+          <h2 style={{ margin: 0 }}>จัดการข้อมูลที่พัก</h2>
+        </Col>
         <Col span={12} style={{ textAlign: "end", alignSelf: "center" }}>
           <Space>
             <Link to="/accommodation/create">
@@ -119,14 +149,17 @@ function Accommodation() {
           </Space>
         </Col>
       </Row>
-      <Divider />
 
-      <div style={{ marginTop: 20 }}>
-        <Table
-          rowKey="ID"
+      <Divider style={{ margin: "12px 0 16px" }} />
+
+      <div style={{ marginTop: 12 }}>
+        <Table<AccommodationInterface>
+          rowKey={(r) => String((r as any).ID ?? "")}
+          loading={loading}
           columns={columns}
-          dataSource={acc}
-          style={{ width: "100%", overflow: "scroll" }}
+          dataSource={Array.isArray(acc) ? acc : []}
+          style={{ width: "100%", overflow: "auto" }}
+          pagination={{ pageSize: 10, showSizeChanger: false }}
         />
       </div>
     </>
