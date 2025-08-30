@@ -1,3 +1,4 @@
+// frontend/src/pages/authentication/Register/index.tsx - Fixed field names
 import {
   Button,
   Card,
@@ -9,9 +10,9 @@ import {
   Col,
   DatePicker,
 } from "antd";
-import {  useEffect } from "react";
+import { useEffect } from "react";
 import { useNavigate } from "react-router-dom";
-import {  CreateAdmin } from "../../../services/https";
+import { CreateAdmin } from "../../../services/https";
 import { type AdminInterface } from "../../../interface/IAdmin";
 import logo from "../../../assets/logo.png";
 
@@ -19,30 +20,35 @@ function SignUpPages() {
   const navigate = useNavigate();
   const [messageApi, contextHolder] = message.useMessage();
 
+  const onFinish = async (values: any) => {
+    // Transform form values to match backend field names
+    const payload: AdminInterface = {
+      Firstname: values.Firstname,
+      Lastname: values.Lastname,
+      Email: values.Email,
+      Password: values.Password,
+      Birthday: values.Birthday ? values.Birthday.format('YYYY-MM-DD') : undefined,
+    };
 
-
-
-  const onFinish = async (values: AdminInterface) => {
-    let res = await CreateAdmin(values);
-    if (res.status == 201) {
-      messageApi.open({
-        type: "success",
-        content: res.data.message,
-      });
-      setTimeout(function () {
-        navigate("/");
-      }, 2000);
-    } else {
-      messageApi.open({
-        type: "error",
-        content: res.data.error,
-      });
+    try {
+      const res = await CreateAdmin(payload);
+      if (res.status === 201 || res.status === 200) {
+        messageApi.success(res.data?.message ?? "สมัครสมาชิกสำเร็จ");
+        setTimeout(() => {
+          navigate("/");
+        }, 2000);
+      } else {
+        messageApi.error(res.data?.error ?? "สมัครสมาชิกไม่สำเร็จ");
+      }
+    } catch (error) {
+      messageApi.error("เกิดข้อผิดพลาดในการสมัครสมาชิก");
     }
   };
 
   useEffect(() => {
-    
+    // Initial setup if needed
   }, []);
+
   return (
     <>
       {contextHolder}
@@ -55,7 +61,7 @@ function SignUpPages() {
             <Col xs={24} sm={24} md={24} lg={24} xl={24}>
               <h2 className="header">Sign Up</h2>
               <Form
-                name="basic"
+                name="signup"
                 layout="vertical"
                 onFinish={onFinish}
                 autoComplete="off"
@@ -64,7 +70,7 @@ function SignUpPages() {
                   <Col xs={24} sm={24} md={24} lg={24} xl={24}>
                     <Form.Item
                       label="ชื่อจริง"
-                      name="first_name"
+                      name="Firstname"  // Fixed: was first_name
                       rules={[
                         {
                           required: true,
@@ -78,8 +84,8 @@ function SignUpPages() {
 
                   <Col xs={24} sm={24} md={24} lg={24} xl={24}>
                     <Form.Item
-                      label="นามกสุล"
-                      name="last_name"
+                      label="นามสกุล"
+                      name="Lastname"  // Fixed: was last_name
                       rules={[
                         {
                           required: true,
@@ -90,12 +96,11 @@ function SignUpPages() {
                       <Input />
                     </Form.Item>
                   </Col>
-                  
 
                   <Col xs={24} sm={24} md={24} lg={24} xl={24}>
                     <Form.Item
                       label="อีเมล"
-                      name="email"
+                      name="Email"  // Fixed: was email
                       rules={[
                         {
                           type: "email",
@@ -114,7 +119,7 @@ function SignUpPages() {
                   <Col xs={24} sm={24} md={24} lg={12} xl={12}>
                     <Form.Item
                       label="รหัสผ่าน"
-                      name="password"
+                      name="Password"  // Fixed: was password
                       rules={[
                         {
                           required: true,
@@ -129,7 +134,7 @@ function SignUpPages() {
                   <Col xs={24} sm={24} md={24} lg={12} xl={12}>
                     <Form.Item
                       label="วัน/เดือน/ปี เกิด"
-                      name="birthday"
+                      name="Birthday"  // Fixed: was birthday
                       rules={[
                         {
                           required: true,

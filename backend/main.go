@@ -14,8 +14,14 @@ func main() {
 	config.SetupDatabase()
 
 	r := gin.Default()
-	r.POST("/import-thailand-all", controller.ImportThailandAll)
+	
+	// Apply CORS middleware first, before any routes
 	r.Use(CORSMiddleware())
+
+	// Test route
+	r.GET("/health", func(c *gin.Context) {
+		c.JSON(200, gin.H{"status": "ok"})
+	})
 
 	// API v1 routes
 	api := r.Group("/api/v1")
@@ -38,8 +44,8 @@ func main() {
 		{
 			accommodationRoutes.GET("", controller.FindAccommodation)
 			accommodationRoutes.GET("/:id", controller.FindAccommodationId)
-			accommodationRoutes.POST("", controller.CreateAccommodation)        // ✅ เพิ่ม POST
-			accommodationRoutes.PUT("/:id", controller.UpdateAccommodationById) // ✅ เพิ่ม PUT
+			accommodationRoutes.POST("", controller.CreateAccommodation)
+			accommodationRoutes.PUT("/:id", controller.UpdateAccommodationById)
 			accommodationRoutes.DELETE("/:id", controller.DeleteAccommodationById)
 		}
 
@@ -60,52 +66,63 @@ func main() {
 			thailandRoutes.GET("/stats", controller.GetThailandStats)
 			thailandRoutes.POST("/clear-data", controller.ClearThailandData)
 
-			// reuse existing find handlers
 			thailandRoutes.GET("/provinces", controller.FindProvinces)
 			thailandRoutes.GET("/districts", controller.FindDistricts)
 			thailandRoutes.GET("/subdistricts", controller.FindSubdistricts)
 		}
 
-		// Admin routes ✅ เพิ่ม Admin routes
+		// Admin routes
 		adminRoutes := api.Group("/admin")
 		{
 			adminRoutes.GET("", controller.FindAdmin)
 			adminRoutes.GET("/:id", controller.FindAdminById)
+			adminRoutes.POST("", controller.CreateAdmin)
+			adminRoutes.PUT("/:id", controller.UpdateAdminById)
 			adminRoutes.DELETE("/:id", controller.DeleteAdminById)
 		}
 	}
 
-	// Legacy routes (backward compatibility)
-	legacy := r.Group("/")
-	{
-		// Authentication routes ✅ เพิ่ม Auth routes
-		legacy.POST("/signin", controller.SignIn)     // ต้องสร้าง controller นี้
-		legacy.POST("/signup", controller.CreateAdmin) // ใช้ CreateAdmin สำหรับ signup
+	// Legacy routes (backward compatibility) - These are the main routes your frontend is using
+	r.POST("/signin", controller.SignIn)
+	r.POST("/signup", controller.CreateAdmin)
 
-		// Location routes ✅ เพิ่ม Location routes
-		legacy.GET("/province", controller.FindProvinces)
-		legacy.GET("/district", controller.FindDistricts)
-		legacy.GET("/subdistrict", controller.FindSubdistricts)
+	// Location routes
+	r.GET("/province", controller.FindProvinces)
+	r.GET("/district", controller.FindDistricts)
+	r.GET("/subdistrict", controller.FindSubdistricts)
 
-		// Admin routes
-		legacy.GET("/admin", controller.FindAdmin)
-		legacy.GET("/admin/:id", controller.FindAdminById)
-		legacy.DELETE("/admin/:id", controller.DeleteAdminById)
+	// Admin routes - These are what your frontend is calling
+	r.GET("/admin", controller.FindAdmin)
+	r.GET("/admin/:id", controller.FindAdminById)
+	r.POST("/admin", controller.CreateAdmin)
+	r.PUT("/admin/:id", controller.UpdateAdminById)
+	r.DELETE("/admin/:id", controller.DeleteAdminById)
 
-		// Accommodation
-		legacy.GET("/accommodation", controller.FindAccommodation)
-		legacy.GET("/accommodation/:id", controller.FindAccommodationId)
-		legacy.POST("/accommodation", controller.CreateAccommodation)        // ✅ เพิ่ม POST
-		legacy.PUT("/accommodation/:id", controller.UpdateAccommodationById) // ✅ เพิ่ม PUT
-		legacy.DELETE("/accommodation/:id", controller.DeleteAccommodationById)
+	// Accommodation routes
+	r.GET("/accommodation", controller.FindAccommodation)
+	r.GET("/accommodation/:id", controller.FindAccommodationId)
+	r.POST("/accommodation", controller.CreateAccommodation)
+	r.PUT("/accommodation/:id", controller.UpdateAccommodationById)
+	r.DELETE("/accommodation/:id", controller.DeleteAccommodationById)
 
-		// Package
-		legacy.POST("/new-package", controller.CreatePackage)
-		legacy.GET("/package", controller.FindPackage)
-		legacy.PUT("/package/update", controller.UpdatePackage)
-		legacy.GET("/package/:id", controller.FindPackageById)
-		legacy.DELETE("/package/:id", controller.DeletePackageById)
-	}
+	// Package routes
+	r.POST("/new-package", controller.CreatePackage)
+	r.POST("/package", controller.CreatePackage) // Alternative route
+	r.GET("/package", controller.FindPackage)
+	r.PUT("/package/update", controller.UpdatePackage)
+	r.PUT("/package/:id", controller.UpdatePackageById) // Add individual update
+	r.GET("/package/:id", controller.FindPackageById)
+	r.DELETE("/package/:id", controller.DeletePackageById)
+
+	// Guide routes (missing)
+	r.GET("/guide", controller.FindGuide)
+	r.GET("/guide/:id", controller.FindGuideById)
+	r.POST("/guide", controller.CreateGuide)
+	r.PUT("/guide/:id", controller.UpdateGuideById)
+	r.DELETE("/guide/:id", controller.DeleteGuideById)
+
+	// Thailand import route (moved to root level)
+	r.POST("/import-thailand-all", controller.ImportThailandAll)
 
 	// Run the server
 	r.Run("localhost:" + PORT)

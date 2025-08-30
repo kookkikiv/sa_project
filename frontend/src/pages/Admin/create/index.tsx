@@ -9,38 +9,39 @@ import {
   Card,
   message,
   DatePicker,
-
 } from "antd";
-import {  useEffect } from "react";
+import { useEffect } from "react";
 import { PlusOutlined } from "@ant-design/icons";
 import { type AdminInterface } from "../../../interface/IAdmin";
-import {  CreateAdmin } from "../../../services/https";
+import { CreateAdmin } from "../../../services/https";
 import { useNavigate, Link } from "react-router-dom";
 
 function AdminCreate() {
   const navigate = useNavigate();
-
   const [messageApi, contextHolder] = message.useMessage();
 
+  const onFinish = async (values: any) => {
+    // Transform form values to match backend field names
+    const payload: AdminInterface = {
+      Firstname: values.Firstname,
+      Lastname: values.Lastname, 
+      Email: values.Email,
+      Password: values.Password,
+      Birthday: values.Birthday ? values.Birthday.format('YYYY-MM-DD') : undefined,
+    };
 
-
-  const onFinish = async (values: AdminInterface) => {
-    let res = await CreateAdmin(values);
-    
-    if (res.status == 201) {
-      messageApi.open({
-        type: "success",
-        content: res.data.message,
-      });
-
-      setTimeout(function () {
-        navigate("/customer");
-      }, 2000);
-    } else {
-      messageApi.open({
-        type: "error",
-        content: res.data.error,
-      });
+    try {
+      const res = await CreateAdmin(payload);
+      if (res.status === 201 || res.status === 200) {
+        messageApi.success(res.data?.message ?? "เพิ่มข้อมูลผู้ดูแลระบบสำเร็จ");
+        setTimeout(() => {
+          navigate("/admin");
+        }, 2000);
+      } else {
+        messageApi.error(res.data?.error ?? "เพิ่มข้อมูลไม่สำเร็จ");
+      }
+    } catch (error) {
+      messageApi.error("เกิดข้อผิดพลาดในการเพิ่มข้อมูล");
     }
   };
 
@@ -55,7 +56,7 @@ function AdminCreate() {
         <h2>เพิ่มข้อมูล ผู้ดูแลระบบ</h2>
         <Divider />
         <Form
-          name="basic"
+          name="admin-create"
           layout="vertical"
           onFinish={onFinish}
           autoComplete="off"
@@ -64,7 +65,7 @@ function AdminCreate() {
             <Col xs={24} sm={24} md={24} lg={24} xl={12}>
               <Form.Item
                 label="ชื่อจริง"
-                name="first_name"
+                name="Firstname"  // Fixed: was first_name
                 rules={[
                   {
                     required: true,
@@ -78,8 +79,8 @@ function AdminCreate() {
 
             <Col xs={24} sm={24} md={24} lg={24} xl={12}>
               <Form.Item
-                label="นามกสุล"
-                name="last_name"
+                label="นามสกุล"
+                name="Lastname"  // Fixed: was last_name
                 rules={[
                   {
                     required: true,
@@ -94,7 +95,7 @@ function AdminCreate() {
             <Col xs={24} sm={24} md={24} lg={24} xl={12}>
               <Form.Item
                 label="อีเมล"
-                name="email"
+                name="Email"  // Fixed: was email
                 rules={[
                   {
                     type: "email",
@@ -113,7 +114,7 @@ function AdminCreate() {
             <Col xs={24} sm={24} md={24} lg={24} xl={12}>
               <Form.Item
                 label="รหัสผ่าน"
-                name="password"
+                name="Password"  // Fixed: was password
                 rules={[
                   {
                     required: true,
@@ -128,7 +129,7 @@ function AdminCreate() {
             <Col xs={24} sm={24} md={24} lg={24} xl={12}>
               <Form.Item
                 label="วัน/เดือน/ปี เกิด"
-                name="birthday"
+                name="Birthday"  // Fixed: was birthday
                 rules={[
                   {
                     required: true,
@@ -139,7 +140,6 @@ function AdminCreate() {
                 <DatePicker style={{ width: "100%" }} />
               </Form.Item>
             </Col>
-
           </Row>
 
           <Row justify="end">

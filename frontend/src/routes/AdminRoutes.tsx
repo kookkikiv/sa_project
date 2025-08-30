@@ -1,3 +1,4 @@
+// frontend/src/routes/AdminRoutes.tsx - Fixed routing
 import { lazy } from "react";
 import { type RouteObject } from "react-router-dom";
 import Loadable from "../components/third-patry/Loadable";
@@ -11,30 +12,42 @@ const EditAdmin = Loadable(lazy(() => import("../pages/Admin/edit")));
 const Accommodation = Loadable(lazy(() => import("../pages/Accommodation")));
 const CreateAccommodation = Loadable(lazy(() => import("../pages/Accommodation/create")));
 const EditAccommodation = Loadable(lazy(() => import("../pages/Accommodation/edit")));
+const Package = Loadable(lazy(() => import("../pages/Package")));
+const CreatePackage = Loadable(lazy(() => import("../pages/Package/create")));
+const EditPackage = Loadable(lazy(() => import("../pages/Package/edit")));
 
 const AdminRoutes = (isLoggedIn: boolean): RouteObject => {
   return {
-    path: "/",
+    path: "/*", // Fixed: Added /* to prevent routing issues
     element: isLoggedIn ? <FullLayout /> : <MainPages />,
     children: [
       // default page for "/"
       { index: true, element: <Dashboard /> },
 
       {
-        path: "admin",
+        path: "admin/*", // Fixed: Added /*
         children: [
-          { index: true, element: <Admin /> },              // "/admin"
-          { path: "create", element: <CreateAdmin /> },     // "/admin/create"
-          { path: "edit/:id", element: <EditAdmin /> },     // "/admin/edit/:id"
+          { index: true, element: <Admin /> },              
+          { path: "create", element: <CreateAdmin /> },     
+          { path: "edit/:id", element: <EditAdmin /> },     
         ],
       },
 
       {
-        path: "accommodation",
+        path: "accommodation/*", // Fixed: Added /*
         children: [
-          { index: true, element: <Accommodation /> },          // "/accommodation"
-          { path: "create", element: <CreateAccommodation /> }, // "/accommodation/create"
-          { path: "edit/:id", element: <EditAccommodation /> }, // "/accommodation/edit/:id"
+          { index: true, element: <Accommodation /> },          
+          { path: "create", element: <CreateAccommodation /> }, 
+          { path: "edit/:id", element: <EditAccommodation /> }, 
+        ],
+      },
+
+      {
+        path: "package/*", // Added package routes
+        children: [
+          { index: true, element: <Package /> },          
+          { path: "create", element: <CreatePackage /> }, 
+          { path: "edit/:id", element: <EditPackage /> }, 
         ],
       },
     ],

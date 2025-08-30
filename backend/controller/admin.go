@@ -11,24 +11,25 @@ import (
 // GET /admin
 func FindAdmin(c *gin.Context) {
 	var admin []entity.Admin
-	if err := config.DB().Raw("SELECT * FROM admin").Find(&admin).Error; err != nil {
-		c.JSON(http.StatusNotFound, gin.H{"error": err.Error()})
+	if err := config.DB().Find(&admin).Error; err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
 	}
 
-	c.JSON(http.StatusOK, admin)
+	c.JSON(http.StatusOK, gin.H{"data": admin})
 }
 
 // GET /admin/:id
 func FindAdminById(c *gin.Context) {
 	var admin entity.Admin
 	id := c.Param("id")
-	if tx := config.DB().Where("id = ?", id).First(&admin); tx.RowsAffected == 0 {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "id not found"})
+	
+	if err := config.DB().Where("id = ?", id).First(&admin).Error; err != nil {
+		c.JSON(http.StatusNotFound, gin.H{"error": "admin not found"})
 		return
 	}
 
-	c.JSON(http.StatusOK, admin)
+	c.JSON(http.StatusOK, gin.H{"data": admin})
 }
 
 // POST /admin - สร้าง Admin ใหม่ (สำหรับ signup)
@@ -114,11 +115,20 @@ func UpdateAdminById(c *gin.Context) {
 
 // DELETE /admin/:id
 func DeleteAdminById(c *gin.Context) {
+	var admin entity.Admin
 	id := c.Param("id")
-	if tx := config.DB().Exec("DELETE FROM admin WHERE id = ?", id); tx.RowsAffected == 0 {
-		c.JSON(http.StatusNotFound, gin.H{"error": "id not found"})
+	
+	// ตรวจสอบว่า record มีอยู่จริงก่อนลบ
+	if err := config.DB().Where("id = ?", id).First(&admin).Error; err != nil {
+		c.JSON(http.StatusNotFound, gin.H{"error": "admin not found"})
+		return
+	}
+	
+	// ลบ record
+	if err := config.DB().Delete(&admin, id).Error; err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to delete admin"})
 		return
 	}
 
-	c.JSON(http.StatusOK, gin.H{"message": "deleted succesful"})
+	c.JSON(http.StatusOK, gin.H{"message": "admin deleted successfully"})
 }
