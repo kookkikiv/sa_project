@@ -1,34 +1,39 @@
 package entity
 
 import (
-	"gorm.io/gorm"
 	"time"
+
+	"gorm.io/gorm"
 )
 
 type Package struct {
 	gorm.Model
-	Name 	string
-	People	uint
-	StartDate 	time.Time
-	FinalDate 	time.Time
-	Price	uint
 
-	GuideID		*uint
-	Guide	Guide `gorm:"foreignkey:GuideID"`
+	Name  string    `json:"name"`
+	Date time.Time `json:"date"`
+	Price uint  `json:"price"`
+	Type string    `json:"type"`
+	GuideID *uint    `json:"guide_id"`
+	Guide   Guide `gorm:"foreignKey:GuideID"`
+	ProvinceID *uint    `json:"province_id"`
+	Province   Province `gorm:"foreignKey:ProvinceID"`
+	DistrictID *uint    `json:"district_id"`
+	District   District `gorm:"foreignKey:DistrictID"`
+	SubdistrictID *uint    `json:"subdistrict_id"`
+	Subdistrict   Subdistrict `gorm:"foreignKey:SubdistrictID"`
+	AdminID *uint    `json:"admin_id"`
+	Admin   Admin `gorm:"foreignKey:AdminID"`
+	LocationID *uint    `json:"location_id"`
+	Location   Location `gorm:"foreignKey:LocationID;references:ID"`	
 
-	ProvinceID		*uint
-	Province		Province `gorm:"foreignkey:ProvinceID"`
 
-	DistrictID		*uint
-	District		District `gorm:"foreignkey:DistrictID"`
+	Accommodation []Accommodation `gorm:"many2many:accommodation_package"`
+	Event []Event `gorm:"many2many:event_package"`
+	CartItem []CartItems `gorm:"foreignKey:package_id"`
+	EventPackage []EventPackage `gorm:"foreignKey:PackageID"`
 
-	SubdistrictID		*uint
-	Subdistrict		Subdistrict `gorm:"foreignkey:SubdistrictID"`
-
-	AdminID		*uint
-	Admin	Admin `gorm:"foreignkey:AdminID"`
-
-	Pac_Acc []Pac_Acc `gorm:"foreignKey:PackageID"`
-	Pac_Event []Pac_Event `gorm:"foreignKey:PackageID"`
 	
+
+
+
 }

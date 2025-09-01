@@ -1,15 +1,28 @@
 package entity
 
 import (
+	
+
 	"gorm.io/gorm"
 )
 
 type Facility struct {
 	gorm.Model
-	Name 	string
-	Type 	string
-	
-	Fac_Acc []Fac_Acc `gorm:"foreignKey:FacilityID"`
-	Fac_Room []Fac_Room `gorm:"foreignKey:FacilityID"`
 
+	Name string `json:"name"`
+	Type string `json:"type"`
+
+
+
+
+	Accommodations []Accommodation `gorm:"many2many:accommodation_facility"`
+
+	Room []Room `gorm:"many2many:room_facility"`
+
+
+	
+
+
+	
+//FK not yet
 }

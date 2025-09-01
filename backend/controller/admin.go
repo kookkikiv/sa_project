@@ -68,20 +68,20 @@ func CreateAdmin(c *gin.Context) {
 		return
 	}
 	
-	if strings.TrimSpace(admin.Firstname) == "" {
+	if strings.TrimSpace(admin.FirstName) == "" {
 		c.JSON(http.StatusBadRequest, gin.H{"error": "Firstname is required"})
 		return
 	}
 	
-	if strings.TrimSpace(admin.Lastname) == "" {
+	if strings.TrimSpace(admin.LastName) == "" {
 		c.JSON(http.StatusBadRequest, gin.H{"error": "Lastname is required"})
 		return
 	}
 
 	// Trim whitespace
 	admin.Email = strings.TrimSpace(admin.Email)
-	admin.Firstname = strings.TrimSpace(admin.Firstname)
-	admin.Lastname = strings.TrimSpace(admin.Lastname)
+	admin.FirstName = strings.TrimSpace(admin.FirstName)
+	admin.LastName = strings.TrimSpace(admin.LastName)
 
 	// Hash password ก่อนบันทึก
 	hashedPassword, err := config.HashPassword(admin.Password)
@@ -106,10 +106,10 @@ func CreateAdmin(c *gin.Context) {
 	c.JSON(http.StatusCreated, gin.H{
 		"data": gin.H{
 			"ID": admin.ID,
-			"Firstname": admin.Firstname,
-			"Lastname": admin.Lastname,
+			"Firstname": admin.FirstName,
+			"Lastname": admin.LastName,
 			"Email": admin.Email,
-			"Birthday": admin.Birthday,
+			"Birthday": admin.BirthDay,
 		},
 		"message": "Admin created successfully",
 	})
@@ -144,17 +144,17 @@ func UpdateAdminById(c *gin.Context) {
 	}
 
 	// Trim whitespace from string fields
-	if updateData.Firstname != "" {
-		updateData.Firstname = strings.TrimSpace(updateData.Firstname)
-		if updateData.Firstname == "" {
+	if updateData.FirstName != "" {
+		updateData.FirstName = strings.TrimSpace(updateData.FirstName)
+		if updateData.FirstName == "" {
 			c.JSON(http.StatusBadRequest, gin.H{"error": "Firstname cannot be empty"})
 			return
 		}
 	}
 	
-	if updateData.Lastname != "" {
-		updateData.Lastname = strings.TrimSpace(updateData.Lastname)
-		if updateData.Lastname == "" {
+	if updateData.LastName != "" {
+		updateData.LastName = strings.TrimSpace(updateData.LastName)
+		if updateData.LastName == "" {
 			c.JSON(http.StatusBadRequest, gin.H{"error": "Lastname cannot be empty"})
 			return
 		}
