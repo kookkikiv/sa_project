@@ -2,10 +2,13 @@ package controller
 
 import (
 	"net/http"
+	"strconv"
+	"strings"
 
 	"github.com/kookkikiv/sa_project/backend/config"
 	"github.com/kookkikiv/sa_project/backend/entity"
 	"github.com/gin-gonic/gin"
+	"gorm.io/gorm"
 )
 
 // GET /admin
@@ -24,11 +27,24 @@ func FindAdminById(c *gin.Context) {
 	var admin entity.Admin
 	id := c.Param("id")
 	
+	// Validate ID format
+	if _, err := strconv.Atoi(id); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid admin ID format"})
+		return
+	}
+	
 	if err := config.DB().Where("id = ?", id).First(&admin).Error; err != nil {
-		c.JSON(http.StatusNotFound, gin.H{"error": "admin not found"})
+		if err == gorm.ErrRecordNotFound {
+			c.JSON(http.StatusNotFound, gin.H{"error": "Admin not found"})
+		} else {
+			c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		}
 		return
 	}
 
+	// Don't return password in response
+	admin.Password = ""
+	
 	c.JSON(http.StatusOK, gin.H{"data": admin})
 }
 
@@ -40,6 +56,32 @@ func CreateAdmin(c *gin.Context) {
 		c.JSON(http.StatusBadRequest, gin.H{"error": "Bad request body: " + err.Error()})
 		return
 	}
+
+	// Validate required fields
+	if strings.TrimSpace(admin.Email) == "" {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Email is required"})
+		return
+	}
+	
+	if strings.TrimSpace(admin.Password) == "" {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Password is required"})
+		return
+	}
+	
+	if strings.TrimSpace(admin.Firstname) == "" {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Firstname is required"})
+		return
+	}
+	
+	if strings.TrimSpace(admin.Lastname) == "" {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Lastname is required"})
+		return
+	}
+
+	// Trim whitespace
+	admin.Email = strings.TrimSpace(admin.Email)
+	admin.Firstname = strings.TrimSpace(admin.Firstname)
+	admin.Lastname = strings.TrimSpace(admin.Lastname)
 
 	// Hash password ก่อนบันทึก
 	hashedPassword, err := config.HashPassword(admin.Password)
@@ -78,6 +120,12 @@ func UpdateAdminById(c *gin.Context) {
 	var updateData entity.Admin
 	id := c.Param("id")
 	
+	// Validate ID format
+	if _, err := strconv.Atoi(id); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid admin ID format"})
+		return
+	}
+	
 	// Bind JSON data
 	if err := c.ShouldBindJSON(&updateData); err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": "Bad request body: " + err.Error()})
@@ -87,12 +135,54 @@ func UpdateAdminById(c *gin.Context) {
 	// ตรวจสอบว่า admin มีอยู่จริง
 	var existingAdmin entity.Admin
 	if err := config.DB().Where("id = ?", id).First(&existingAdmin).Error; err != nil {
-		c.JSON(http.StatusNotFound, gin.H{"error": "Admin not found"})
+		if err == gorm.ErrRecordNotFound {
+			c.JSON(http.StatusNotFound, gin.H{"error": "Admin not found"})
+		} else {
+			c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		}
 		return
+	}
+
+	// Trim whitespace from string fields
+	if updateData.Firstname != "" {
+		updateData.Firstname = strings.TrimSpace(updateData.Firstname)
+		if updateData.Firstname == "" {
+			c.JSON(http.StatusBadRequest, gin.H{"error": "Firstname cannot be empty"})
+			return
+		}
+	}
+	
+	if updateData.Lastname != "" {
+		updateData.Lastname = strings.TrimSpace(updateData.Lastname)
+		if updateData.Lastname == "" {
+			c.JSON(http.StatusBadRequest, gin.H{"error": "Lastname cannot be empty"})
+			return
+		}
+	}
+	
+	if updateData.Email != "" {
+		updateData.Email = strings.TrimSpace(updateData.Email)
+		if updateData.Email == "" {
+			c.JSON(http.StatusBadRequest, gin.H{"error": "Email cannot be empty"})
+			return
+		}
+		
+		// ตรวจสอบ email ซ้ำ (ยกเว้นตัวเอง)
+		var existingEmailAdmin entity.Admin
+		if err := config.DB().Where("email = ? AND id != ?", updateData.Email, id).First(&existingEmailAdmin).Error; err == nil {
+			c.JSON(http.StatusConflict, gin.H{"error": "Email already exists"})
+			return
+		}
 	}
 
 	// ถ้ามีการเปลี่ยนรหัสผ่าน ให้ hash ใหม่
 	if updateData.Password != "" {
+		updateData.Password = strings.TrimSpace(updateData.Password)
+		if len(updateData.Password) < 6 {
+			c.JSON(http.StatusBadRequest, gin.H{"error": "Password must be at least 6 characters"})
+			return
+		}
+		
 		hashedPassword, err := config.HashPassword(updateData.Password)
 		if err != nil {
 			c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to hash password"})
@@ -101,11 +191,21 @@ func UpdateAdminById(c *gin.Context) {
 		updateData.Password = hashedPassword
 	}
 
-	// อัปเดตข้อมูล
-	if err := config.DB().Model(&existingAdmin).Updates(&updateData).Error; err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to update admin: " + err.Error()})
+	// อัปเดตข้อมูล (GORM จะไม่อัปเดต zero values, ใช้ Select สำหรับ fields ที่ต้องการ)
+	result := config.DB().Model(&existingAdmin).Updates(&updateData)
+	if result.Error != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to update admin: " + result.Error.Error()})
 		return
 	}
+
+	// โหลดข้อมูลใหม่เพื่อส่งกลับ
+	if err := config.DB().Where("id = ?", id).First(&existingAdmin).Error; err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to reload admin data"})
+		return
+	}
+
+	// ไม่ส่ง password กลับ
+	existingAdmin.Password = ""
 
 	c.JSON(http.StatusOK, gin.H{
 		"data": existingAdmin, 
@@ -118,17 +218,27 @@ func DeleteAdminById(c *gin.Context) {
 	var admin entity.Admin
 	id := c.Param("id")
 	
+	// Validate ID format
+	if _, err := strconv.Atoi(id); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid admin ID format"})
+		return
+	}
+	
 	// ตรวจสอบว่า record มีอยู่จริงก่อนลบ
 	if err := config.DB().Where("id = ?", id).First(&admin).Error; err != nil {
-		c.JSON(http.StatusNotFound, gin.H{"error": "admin not found"})
+		if err == gorm.ErrRecordNotFound {
+			c.JSON(http.StatusNotFound, gin.H{"error": "Admin not found"})
+		} else {
+			c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		}
 		return
 	}
 	
 	// ลบ record
 	if err := config.DB().Delete(&admin, id).Error; err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to delete admin"})
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to delete admin"})
 		return
 	}
 
-	c.JSON(http.StatusOK, gin.H{"message": "admin deleted successfully"})
+	c.JSON(http.StatusOK, gin.H{"message": "Admin deleted successfully"})
 }

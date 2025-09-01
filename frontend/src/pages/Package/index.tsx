@@ -8,6 +8,7 @@ import {
   Divider,
   message,
   Popconfirm,
+  Tag,
 } from "antd";
 import { PlusOutlined, DeleteOutlined, EditOutlined } from "@ant-design/icons";
 import type { ColumnsType } from "antd/es/table";
@@ -20,11 +21,10 @@ import { Link, useNavigate } from "react-router-dom";
 
 function Package() {
   const navigate = useNavigate();
-  const [acc, setAcc] = useState<PackageInterface[]>([]);
+  const [packages, setPackages] = useState<PackageInterface[]>([]);
   const [loading, setLoading] = useState<boolean>(false);
   const [messageApi, contextHolder] = message.useMessage();
 
-  // เก็บ id ของตัวเอง (string) ไว้เทียบกับ record.ID (แปลงเป็น string ตอนเทียบ)
   const myId = localStorage.getItem("id") ?? "";
 
   const deletePackageById = async (id: string | number) => {
@@ -32,7 +32,7 @@ function Package() {
       const res = await DeletePackageById(String(id));
       if (res.status === 200) {
         messageApi.success(res.data?.message ?? "ลบข้อมูลสำเร็จ");
-        await getAcc();
+        await getPackages();
       } else {
         messageApi.error(res.data?.error ?? "ลบข้อมูลไม่สำเร็จ");
       }
@@ -41,12 +41,11 @@ function Package() {
     }
   };
 
-  const getAcc = async () => {
+  const getPackages = async () => {
     try {
       setLoading(true);
       const res = await GetPackage();
       if (res.status === 200) {
-        // รองรับหลายรูปแบบผลลัพธ์จาก backend
         const list =
           Array.isArray(res.data)
             ? res.data
@@ -56,13 +55,13 @@ function Package() {
             ? res.data.items
             : [];
 
-        setAcc(list as PackageInterface[]);
+        setPackages(list as PackageInterface[]);
       } else {
-        setAcc([]);
+        setPackages([]);
         messageApi.error(res.data?.error ?? "ไม่สามารถดึงข้อมูลแพ็คเกจได้");
       }
     } catch (e) {
-      setAcc([]);
+      setPackages([]);
       messageApi.error("เกิดข้อผิดพลาดในการดึงข้อมูลแพ็คเกจ");
     } finally {
       setLoading(false);
@@ -70,16 +69,30 @@ function Package() {
   };
 
   useEffect(() => {
-    void getAcc();
+    void getPackages();
   }, []);
+
+  const formatDate = (dateString: string) => {
+    if (!dateString) return "-";
+    return new Date(dateString).toLocaleDateString('th-TH');
+  };
+
+  const formatPrice = (price: string | number) => {
+    if (!price) return "-";
+    return new Intl.NumberFormat('th-TH', {
+      style: 'currency',
+      currency: 'THB',
+    }).format(Number(price));
+  };
 
   const columns: ColumnsType<PackageInterface> = [
     {
       title: "",
       width: 72,
       render: (record) => {
-        const isMe = String(record?.ID ?? "") === myId;
-        if (isMe) return null;
+        const isMyPackage = String(record?.AdminID ?? "") === myId;
+        // Only show delete button if current user is the creator
+        if (!isMyPackage) return null;
         return (
           <Popconfirm
             title="ยืนยันการลบ?"
@@ -97,24 +110,59 @@ function Package() {
       title: "ลำดับ",
       dataIndex: "ID",
       key: "ID",
-      width: 100,
+      width: 80,
     },
     {
       title: "ชื่อแพ็คเกจ",
       dataIndex: "Name",
       key: "Name",
+      width: 200,
     },
     {
-      title: "ประเภท",
-      dataIndex: "Type",
-      key: "Type",
-      width: 160,
+      title: "จำนวนคน",
+      dataIndex: "People",
+      key: "People",
+      width: 100,
+      render: (value) => value ? `${value} คน` : "-",
+    },
+    {
+      title: "วันเริ่มต้น",
+      dataIndex: "StartDate",
+      key: "StartDate",
+      width: 120,
+      render: formatDate,
+    },
+    {
+      title: "วันสิ้นสุด",
+      dataIndex: "FinalDate",
+      key: "FinalDate",
+      width: 120,
+      render: formatDate,
+    },
+    {
+      title: "ราคา",
+      dataIndex: "Price",
+      key: "Price",
+      width: 120,
+      render: formatPrice,
     },
     {
       title: "สถานะ",
-      dataIndex: "Status",
-      key: "Status",
-      width: 140,
+      key: "status",
+      width: 100,
+      render: (record) => {
+        const today = new Date();
+        const startDate = new Date(record.StartDate);
+        const endDate = new Date(record.FinalDate);
+        
+        if (today < startDate) {
+          return <Tag color="blue">เตรียมเดินทาง</Tag>;
+        } else if (today >= startDate && today <= endDate) {
+          return <Tag color="green">กำลังดำเนินการ</Tag>;
+        } else {
+          return <Tag color="gray">สิ้นสุดแล้ว</Tag>;
+        }
+      },
     },
     {
       title: "",
@@ -137,7 +185,7 @@ function Package() {
 
       <Row gutter={[16, 16]}>
         <Col span={12}>
-          <h2 style={{ margin: 0 }}>จัดการข้อมูลแพ็คเกจ</h2>
+          <h2 style={{ margin: 0 }}>จัดการข้อมูลแพ็คเกจทัวร์</h2>
         </Col>
         <Col span={12} style={{ textAlign: "end", alignSelf: "center" }}>
           <Space>
@@ -157,9 +205,10 @@ function Package() {
           rowKey={(r) => String((r as any).ID ?? "")}
           loading={loading}
           columns={columns}
-          dataSource={Array.isArray(acc) ? acc : []}
+          dataSource={Array.isArray(packages) ? packages : []}
           style={{ width: "100%", overflow: "auto" }}
           pagination={{ pageSize: 10, showSizeChanger: false }}
+          scroll={{ x: 1000 }}
         />
       </div>
     </>

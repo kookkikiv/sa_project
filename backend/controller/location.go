@@ -16,6 +16,13 @@ func FindProvinces(c *gin.Context) {
 		return
 	}
 
+	// Debug log ให้ดูข้อมูลที่ส่งออกไป
+	for i, p := range provinces {
+		if i < 3 { // แสดงแค่ 3 ตัวแรก
+			println("Province debug:", p.ID, p.NameTh, p.NameEn, p.ProvinceCode)
+		}
+	}
+
 	c.JSON(http.StatusOK, gin.H{"data": provinces})
 }
 
@@ -52,6 +59,16 @@ func FindDistricts(c *gin.Context) {
 		if err := db.Find(&districts).Error; err != nil {
 			c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 			return
+		}
+	}
+
+	// Debug log
+	if provinceId != "" {
+		println("Districts for province", provinceId, "count:", len(districts))
+		for i, d := range districts {
+			if i < 3 {
+				println("District debug:", d.ID, d.NameTh, d.NameEn, d.DistrictCode)
+			}
 		}
 	}
 
@@ -94,6 +111,16 @@ func FindSubdistricts(c *gin.Context) {
 		}
 	}
 
+	// Debug log
+	if districtId != "" {
+		println("Subdistricts for district", districtId, "count:", len(subdistricts))
+		for i, s := range subdistricts {
+			if i < 3 {
+				println("Subdistrict debug:", s.ID, s.NameTh, s.NameEn, s.SubdistrictCode)
+			}
+		}
+	}
+
 	c.JSON(http.StatusOK, gin.H{"data": subdistricts})
 }
 
@@ -113,4 +140,3 @@ func CreateSubdistrict(c *gin.Context) {
 
 	c.JSON(http.StatusCreated, gin.H{"data": subdistrict, "message": "Subdistrict created successfully"})
 }
-

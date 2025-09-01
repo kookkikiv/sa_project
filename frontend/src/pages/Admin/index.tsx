@@ -1,202 +1,269 @@
-// frontend/src/pages/Admin/edit/index.tsx - Fixed field names
-import { useEffect } from "react";
+import React, { useState, useEffect } from "react";
 import {
   Space,
+  Table,
   Button,
   Col,
   Row,
   Divider,
-  Form,
-  Input,
-  Card,
   message,
-  DatePicker,
+  Popconfirm,
 } from "antd";
+import { PlusOutlined, DeleteOutlined, EditOutlined } from "@ant-design/icons";
+import type { ColumnsType } from "antd/es/table";
+import { Link, useNavigate } from "react-router-dom";
 
-import { PlusOutlined } from "@ant-design/icons";
-import { type AdminInterface } from "../../../interface/IAdmin";
-import { GetAdminById, UpdateAdminById } from "../../../services/https/index";
-import { useNavigate, Link, useParams } from "react-router-dom";
-import dayjs from "dayjs";
+// Admin Interface
+interface AdminInterface {
+  ID?: number;
+  Firstname?: string;
+  Lastname?: string;
+  Email?: string;
+  Birthday?: string;
+}
 
-function AdminEdit() {
+// API Functions
+const apiUrl = "http://localhost:8000";
+
+const getAuthHeaders = () => {
+  const token = localStorage.getItem("token");
+  const tokenType = localStorage.getItem("token_type");
+  return {
+    "Content-Type": "application/json",
+    ...(token && tokenType ? { Authorization: `${tokenType} ${token}` } : {}),
+  };
+};
+
+const fetchAdmins = async () => {
+  try {
+    const response = await fetch(`${apiUrl}/admin`, {
+      headers: getAuthHeaders(),
+    });
+    if (response.ok) {
+      const data = await response.json();
+      return { status: response.status, data: data.data || data };
+    }
+    return { status: response.status, data: null };
+  } catch (error) {
+    console.error("Fetch error:", error);
+    return { status: 500, data: null };
+  }
+};
+
+const deleteAdminById = async (id: string) => {
+  try {
+    const response = await fetch(`${apiUrl}/admin/${id}`, {
+      method: "DELETE",
+      headers: getAuthHeaders(),
+    });
+    const data = await response.json();
+    return { status: response.status, data };
+  } catch (error) {
+    console.error("Delete error:", error);
+    return { status: 500, data: { error: "Network error" } };
+  }
+};
+
+const Admin: React.FC = () => {
   const navigate = useNavigate();
-  const { id } = useParams<{ id: string }>();
+  const [admins, setAdmins] = useState<AdminInterface[]>([]);
+  const [loading, setLoading] = useState<boolean>(false);
   const [messageApi, contextHolder] = message.useMessage();
-  const [form] = Form.useForm();
 
-  const getAdminById = async (id: string) => {
+  const myId = localStorage.getItem("id") ?? "";
+
+  const handleDelete = async (id: string | number) => {
     try {
-      const res = await GetAdminById(id);
+      setLoading(true);
+      const res = await deleteAdminById(String(id));
       if (res.status === 200) {
-        const adminData = res.data?.data || res.data; // Handle different response formats
-        
-        form.setFieldsValue({
-          Firstname: adminData.Firstname,
-          Lastname: adminData.Lastname,
-          Email: adminData.Email,
-          Birthday: adminData.Birthday ? dayjs(adminData.Birthday) : null,
-        });
+        messageApi.success(res.data?.message || "ลบข้อมูลสำเร็จ");
+        await loadAdmins();
       } else {
-        messageApi.error("ไม่พบข้อมูลผู้ดูแลระบบ");
-        setTimeout(() => {
-          navigate("/admin");
-        }, 2000);
+        messageApi.error(res.data?.error || "ลบข้อมูลไม่สำเร็จ");
       }
-    } catch (error) {
-      messageApi.error("เกิดข้อผิดพลาดในการดึงข้อมูล");
-      setTimeout(() => {
-        navigate("/admin");
-      }, 2000);
+    } catch (e) {
+      console.error("Delete error:", e);
+      messageApi.error("เกิดข้อผิดพลาดในการลบข้อมูล");
+    } finally {
+      setLoading(false);
     }
   };
 
-  const onFinish = async (values: any) => {
+  const loadAdmins = async () => {
     try {
-      // Transform form values to match backend
-      const payload: AdminInterface = {
-        Firstname: values.Firstname,
-        Lastname: values.Lastname,
-        Email: values.Email,
-        Birthday: values.Birthday ? values.Birthday.format('YYYY-MM-DD') : undefined,
-        // Don't include password unless it's being changed
-        ...(values.Password && { Password: values.Password }),
-      };
-
-      const res = await UpdateAdminById(id!, payload);
-      if (res.status === 200) {
-        messageApi.success(res.data?.message ?? "แก้ไขข้อมูลสำเร็จ");
-        setTimeout(() => {
-          navigate("/admin");
-        }, 2000);
+      setLoading(true);
+      const res = await fetchAdmins();
+      
+      if (res.status === 200 && res.data) {
+        if (Array.isArray(res.data)) {
+          setAdmins(res.data);
+        } else {
+          setAdmins([]);
+          messageApi.error("รูปแบบข้อมูลไม่ถูกต้อง");
+        }
       } else {
-        messageApi.error(res.data?.error ?? "แก้ไขข้อมูลไม่สำเร็จ");
+        setAdmins([]);
+        messageApi.error("ไม่สามารถดึงข้อมูลผู้ดูแลระบบได้");
       }
-    } catch (error) {
-      messageApi.error("เกิดข้อผิดพลาดในการแก้ไขข้อมูล");
+    } catch (e) {
+      console.error("Load error:", e);
+      setAdmins([]);
+      messageApi.error("เกิดข้อผิดพลาดในการดึงข้อมูลผู้ดูแลระบบ");
+    } finally {
+      setLoading(false);
     }
   };
 
   useEffect(() => {
-    if (id) {
-      getAdminById(id);
+    loadAdmins();
+  }, []);
+
+  const formatDate = (dateString?: string) => {
+    if (!dateString) return "-";
+    try {
+      return new Date(dateString).toLocaleDateString('th-TH', {
+        year: 'numeric',
+        month: 'long',
+        day: 'numeric'
+      });
+    } catch {
+      return "-";
     }
-  }, [id]);
+  };
+
+  const columns: ColumnsType<AdminInterface> = [
+    {
+      title: "",
+      width: 50,
+      render: (record) => {
+        const isMe = String(record.ID ?? "") === myId;
+        if (isMe) return null;
+        return (
+          <Popconfirm
+            title="ยืนยันการลบ?"
+            description="คุณต้องการลบรายการนี้หรือไม่"
+            okText="ลบ"
+            cancelText="ยกเลิก"
+            onConfirm={() => handleDelete(record.ID as number)}
+          >
+            <Button 
+              type="text" 
+              danger 
+              icon={<DeleteOutlined />} 
+              size="small"
+            />
+          </Popconfirm>
+        );
+      },
+    },
+    {
+      title: "ID",
+      dataIndex: "ID",
+      key: "ID",
+      width: 80,
+      sorter: (a, b) => (a.ID || 0) - (b.ID || 0),
+    },
+    {
+      title: "ชื่อ",
+      dataIndex: "Firstname",
+      key: "Firstname",
+      sorter: (a, b) => (a.Firstname || "").localeCompare(b.Firstname || ""),
+    },
+    {
+      title: "นามสกุล",
+      dataIndex: "Lastname",
+      key: "Lastname",
+      sorter: (a, b) => (a.Lastname || "").localeCompare(b.Lastname || ""),
+    },
+    {
+      title: "อีเมล",
+      dataIndex: "Email",
+      key: "Email",
+      render: (email) => (
+        <a href={`mailto:${email}`} style={{ color: '#1890ff' }}>
+          {email}
+        </a>
+      ),
+    },
+    {
+      title: "วันเกิด",
+      dataIndex: "Birthday",
+      key: "Birthday",
+      width: 150,
+      render: formatDate,
+      sorter: (a, b) => {
+        const dateA = new Date(a.Birthday || "").getTime();
+        const dateB = new Date(b.Birthday || "").getTime();
+        return dateA - dateB;
+      },
+    },
+    {
+      title: "การจัดการ",
+      key: "action",
+      width: 120,
+      render: (record) => (
+        <Button
+          type="primary"
+          size="small"
+          icon={<EditOutlined />}
+          onClick={() => navigate(`/admin/edit/${record.ID}`)}
+        >
+          แก้ไข
+        </Button>
+      ),
+    },
+  ];
 
   return (
-    <div>
+    <>
       {contextHolder}
-      <Card>
-        <h2>แก้ไขข้อมูล ผู้ดูแลระบบ</h2>
-        <Divider />
 
-        <Form
-          name="admin-edit"
-          form={form}
-          layout="vertical"
-          onFinish={onFinish}
-          autoComplete="off"
-        >
-          <Row gutter={[16, 0]}>
-            <Col xs={24} sm={24} md={24} lg={24} xl={12}>
-              <Form.Item
-                label="ชื่อจริง"
-                name="Firstname"  // Fixed: was first_name
-                rules={[
-                  {
-                    required: true,
-                    message: "กรุณากรอกชื่อ !",
-                  },
-                ]}
-              >
-                <Input />
-              </Form.Item>
-            </Col>
+      <Row gutter={[16, 16]} align="middle">
+        <Col flex="auto">
+          <h2 style={{ margin: 0, fontSize: '24px', fontWeight: 600 }}>
+            จัดการข้อมูลผู้ดูแลระบบ
+          </h2>
+        </Col>
+        <Col>
+          <Link to="/admin/create">
+            <Button 
+              type="primary" 
+              icon={<PlusOutlined />}
+              size="large"
+            >
+              เพิ่มผู้ดูแลระบบ
+            </Button>
+          </Link>
+        </Col>
+      </Row>
 
-            <Col xs={24} sm={24} md={24} lg={24} xl={12}>
-              <Form.Item
-                label="นามสกุล"
-                name="Lastname"  // Fixed: was last_name
-                rules={[
-                  {
-                    required: true,
-                    message: "กรุณากรอกนามสกุล !",
-                  },
-                ]}
-              >
-                <Input />
-              </Form.Item>
-            </Col>
+      <Divider style={{ margin: "16px 0" }} />
 
-            <Col xs={24} sm={24} md={24} lg={24} xl={12}>
-              <Form.Item
-                label="อีเมล"
-                name="Email"  // Fixed: was email
-                rules={[
-                  {
-                    type: "email",
-                    message: "รูปแบบอีเมลไม่ถูกต้อง !",
-                  },
-                  {
-                    required: true,
-                    message: "กรุณากรอกอีเมล !",
-                  },
-                ]}
-              >
-                <Input />
-              </Form.Item>
-            </Col>
-
-            <Col xs={24} sm={24} md={24} lg={24} xl={12}>
-              <Form.Item
-                label="รหัสผ่านใหม่ (ถ้าต้องการเปลี่ยน)"
-                name="Password"  // Fixed: was password
-              >
-                <Input.Password placeholder="ใส่รหัสผ่านใหม่ หากต้องการเปลี่ยน" />
-              </Form.Item>
-            </Col>
-
-            <Col xs={24} sm={24} md={24} lg={24} xl={12}>
-              <Form.Item
-                label="วัน/เดือน/ปี เกิด"
-                name="Birthday"  // Fixed: was birthday
-                rules={[
-                  {
-                    required: true,
-                    message: "กรุณาเลือกวัน/เดือน/ปี เกิด !",
-                  },
-                ]}
-              >
-                <DatePicker style={{ width: "100%" }} />
-              </Form.Item>
-            </Col>
-          </Row>
-
-          <Row justify="end">
-            <Col style={{ marginTop: "40px" }}>
-              <Form.Item>
-                <Space>
-                  <Link to="/admin">
-                    <Button htmlType="button" style={{ marginRight: "10px" }}>
-                      ยกเลิก
-                    </Button>
-                  </Link>
-
-                  <Button
-                    type="primary"
-                    htmlType="submit"
-                    icon={<PlusOutlined />}
-                  >
-                    บันทึก
-                  </Button>
-                </Space>
-              </Form.Item>
-            </Col>
-          </Row>
-        </Form>
-      </Card>
-    </div>
+      <div style={{ 
+        background: '#fff', 
+        padding: '24px', 
+        borderRadius: '8px',
+        boxShadow: '0 2px 8px rgba(0,0,0,0.1)'
+      }}>
+        <Table<AdminInterface>
+          rowKey={(record) => String(record.ID ?? Math.random())}
+          loading={loading}
+          columns={columns}
+          dataSource={admins}
+          pagination={{
+            pageSize: 10,
+            showSizeChanger: true,
+            showQuickJumper: true,
+            showTotal: (total, range) => 
+              `${range[0]}-${range[1]} จาก ${total} รายการ`,
+          }}
+          scroll={{ x: 800 }}
+          size="middle"
+        />
+      </div>
+    </>
   );
-}
+};
 
-export default AdminEdit;
+export default Admin;

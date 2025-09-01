@@ -9,8 +9,8 @@ import {
   Card,
   message,
   Select,
-  DatePicker,
   InputNumber,
+  DatePicker,
 } from "antd";
 import { useState, useEffect } from "react";
 import { PlusOutlined } from "@ant-design/icons";
@@ -27,7 +27,7 @@ import {
   CreatePackage,
 } from "../../../services/https";
 import { useNavigate, Link } from "react-router-dom";
-import dayjs from "dayjs";
+
 
 const { RangePicker } = DatePicker;
 
@@ -36,80 +36,70 @@ function PackageCreate() {
   const [form] = Form.useForm<PackageInterface>();
   const [messageApi, contextHolder] = message.useMessage();
 
-  // States for dropdown data
   const [province, setProvince] = useState<ProvinceInterface[]>([]);
   const [district, setDistrict] = useState<DistrictInterface[]>([]);
   const [subdistrict, setSubdistrict] = useState<SubdistrictInterface[]>([]);
-  const [guide, setGuide] = useState<GuideInterface[]>([]);
+  const [guides, setGuides] = useState<GuideInterface[]>([]);
 
-  // Loading states
   const [loadingProvince, setLoadingProvince] = useState(false);
   const [loadingDistrict, setLoadingDistrict] = useState(false);
   const [loadingSubdistrict, setLoadingSubdistrict] = useState(false);
-  const [loadingGuide, setLoadingGuide] = useState(false);
-  const [submitting, setSubmitting] = useState(false);
+  const [loadingGuides, setLoadingGuides] = useState(false);
 
-  // Selected values for cascading
   const [selectedProvince, setSelectedProvince] = useState<number | null>(null);
   const [selectedDistrict, setSelectedDistrict] = useState<number | null>(null);
 
-  // Helper function: safely extract array from API response
-  const asArray = <T,>(val: any): T[] => {
-    if (Array.isArray(val)) return val as T[];
-    if (Array.isArray(val?.data)) return val.data as T[];
-    if (Array.isArray(val?.items)) return val.items as T[];
-    return [];
-  };
+  // ---------- Helpers ----------
+  const asArray = <T,>(val: any): T[] =>
+    Array.isArray(val) ? (val as T[])
+    : Array.isArray(val?.data) ? (val.data as T[])
+    : Array.isArray(val?.items) ? (val.items as T[])
+    : [];
 
-  // โหลดข้อมูลจังหวัด
+  const getProvinceLabel = (p: any) =>
+    p.NameTh || p.NameTH || p.ProvinceNameTh || p.ProvinceNameTH || p.Name || p.ThaiName || String(p.ID);
+
+  const getDistrictLabel = (d: any) =>
+    d.NameTh || d.NameTH || d.DistrictNameTh || d.DistrictNameTH || d.Name || d.ThaiName || String(d.ID);
+
+  const getSubdistrictLabel = (s: any) =>
+    s.NameTh || s.NameTH || s.SubdistrictNameTh || s.SubdistrictNameTH || s.Name || s.ThaiName || String(s.ID);
+
+  const getGuideLabel = (g: any) =>
+    g.Name || g.FullName || `${g.FirstName || ''} ${g.LastName || ''}`.trim() || String(g.ID);
+
+  // ---------- Fetch ----------
   const onGetProvince = async () => {
     try {
       setLoadingProvince(true);
       const res = await GetProvince();
-      
       if (res.status === 200) {
-        const provinceData = asArray<ProvinceInterface>(res.data);
-        setProvince(provinceData);
-        
-        if (provinceData.length === 0) {
-          messageApi.warning("ไม่พบข้อมูลจังหวัด");
-        }
+        setProvince(asArray<ProvinceInterface>(res.data));
       } else {
         setProvince([]);
-        messageApi.error(res?.data?.error || "ไม่สามารถโหลดข้อมูลจังหวัดได้");
+        messageApi.error(res?.data?.error ?? "ไม่พบข้อมูลจังหวัด");
+        navigate("/package");
       }
-    } catch (error) {
-      console.error("Error loading provinces:", error);
+    } catch {
       setProvince([]);
       messageApi.error("เกิดข้อผิดพลาดในการโหลดจังหวัด");
+      navigate("/package");
     } finally {
       setLoadingProvince(false);
     }
   };
 
-  // โหลดข้อมูลอำเภอตามจังหวัดที่เลือก
   const onGetDistrict = async (provinceId: number) => {
-    if (!provinceId) return;
-    
     try {
       setLoadingDistrict(true);
-      setDistrict([]);
-      
       const res = await GetDistrict(provinceId);
-      
       if (res.status === 200) {
-        const districtData = asArray<DistrictInterface>(res.data);
-        setDistrict(districtData);
-        
-        if (districtData.length === 0) {
-          messageApi.warning("ไม่พบข้อมูลอำเภอในจังหวัดนี้");
-        }
+        setDistrict(asArray<DistrictInterface>(res.data));
       } else {
         setDistrict([]);
-        messageApi.error(res?.data?.error || "ไม่สามารถโหลดข้อมูลอำเภอได้");
+        messageApi.error(res?.data?.error ?? "ไม่พบข้อมูลอำเภอ");
       }
-    } catch (error) {
-      console.error("Error loading districts:", error);
+    } catch {
       setDistrict([]);
       messageApi.error("เกิดข้อผิดพลาดในการโหลดอำเภอ");
     } finally {
@@ -117,29 +107,17 @@ function PackageCreate() {
     }
   };
 
-  // โหลดข้อมูลตำบลตามอำเภอที่เลือก
   const onGetSubdistrict = async (districtId: number) => {
-    if (!districtId) return;
-    
     try {
       setLoadingSubdistrict(true);
-      setSubdistrict([]);
-      
       const res = await GetSubdistrict(districtId);
-      
       if (res.status === 200) {
-        const subdistrictData = asArray<SubdistrictInterface>(res.data);
-        setSubdistrict(subdistrictData);
-        
-        if (subdistrictData.length === 0) {
-          messageApi.warning("ไม่พบข้อมูลตำบลในอำเภอนี้");
-        }
+        setSubdistrict(asArray<SubdistrictInterface>(res.data));
       } else {
         setSubdistrict([]);
-        messageApi.error(res?.data?.error || "ไม่สามารถโหลดข้อมูลตำบลได้");
+        messageApi.error(res?.data?.error ?? "ไม่พบข้อมูลตำบล");
       }
-    } catch (error) {
-      console.error("Error loading subdistricts:", error);
+    } catch {
       setSubdistrict([]);
       messageApi.error("เกิดข้อผิดพลาดในการโหลดตำบล");
     } finally {
@@ -147,135 +125,84 @@ function PackageCreate() {
     }
   };
 
-  // โหลดข้อมูลไกด์
-  const onGetGuide = async () => {
+  const onGetGuides = async () => {
     try {
-      setLoadingGuide(true);
+      setLoadingGuides(true);
       const res = await GetGuide();
-      
       if (res.status === 200) {
-        const guideData = asArray<GuideInterface>(res.data);
-        setGuide(guideData);
-        
-        if (guideData.length === 0) {
-          messageApi.warning("ไม่พบข้อมูลไกด์");
-        }
+        setGuides(asArray<GuideInterface>(res.data));
       } else {
-        setGuide([]);
-        messageApi.error(res?.data?.error || "ไม่สามารถโหลดข้อมูลไกด์ได้");
+        setGuides([]);
+        messageApi.error(res?.data?.error ?? "ไม่พบข้อมูลไกด์");
       }
-    } catch (error) {
-      console.error("Error loading guides:", error);
-      setGuide([]);
+    } catch {
+      setGuides([]);
       messageApi.error("เกิดข้อผิดพลาดในการโหลดไกด์");
     } finally {
-      setLoadingGuide(false);
+      setLoadingGuides(false);
     }
   };
 
-  // Handle form submission
+  // ---------- Submit ----------
   const onFinish = async (values: any) => {
     try {
-      setSubmitting(true);
-      
       const adminId = localStorage.getItem("id");
-      if (!adminId) {
-        messageApi.error("ไม่พบข้อมูลผู้ใช้ กรุณาเข้าสู่ระบบใหม่");
-        return;
-      }
-
-      // จัดการวันที่
-      let startDate, finalDate;
-      if (values.dateRange && values.dateRange[0] && values.dateRange[1]) {
-        startDate = dayjs(values.dateRange[0]).format('YYYY-MM-DD');
-        finalDate = dayjs(values.dateRange[1]).format('YYYY-MM-DD');
-      }
-
+      const dateRange = values.DateRange;
+      
       const payload = {
-        Name: values.Name?.trim(),
+        Name: values.Name,
         People: values.People,
-        StartDate: startDate,
-        FinalDate: finalDate,
+        StartDate: dateRange ? dateRange[0].format('YYYY-MM-DD') : undefined,
+        FinalDate: dateRange ? dateRange[1].format('YYYY-MM-DD') : undefined,
         Price: values.Price,
         ProvinceID: values.ProvinceID,
         DistrictID: values.DistrictID,
         SubdistrictID: values.SubdistrictID,
         GuideID: values.GuideID,
-        AdminID: parseInt(adminId, 10),
+        AdminID: adminId ? parseInt(adminId, 10) : undefined,
       };
 
-      // Validate required fields
-      if (!payload.Name) {
-        messageApi.error("กรุณากรอกชื่อแพ็คเกจ");
-        return;
-      }
-
-      if (!payload.GuideID) {
-        messageApi.error("กรุณาเลือกไกด์");
-        return;
-      }
-
       const res = await CreatePackage(payload);
-      
       if (res.status === 201 || res.status === 200) {
-        messageApi.success(res?.data?.message || "เพิ่มข้อมูลแพ็คเกจสำเร็จ");
-        form.resetFields();
-        setTimeout(() => navigate("/package"), 1000);
+        messageApi.success(res?.data?.message ?? "บันทึกสำเร็จ");
+        navigate("/package");
       } else {
-        messageApi.error(res?.data?.error || "ไม่สามารถบันทึกข้อมูลได้");
+        messageApi.error(res?.data?.error ?? "บันทึกไม่สำเร็จ");
       }
-    } catch (error) {
-      console.error("Error creating package:", error);
+    } catch {
       messageApi.error("เกิดข้อผิดพลาดในการบันทึกข้อมูล");
-    } finally {
-      setSubmitting(false);
     }
   };
 
-  // Handle province change
-  const handleProvinceChange = (value: number | undefined) => {
-    setSelectedProvince(value || null);
-    setSelectedDistrict(null);
-    setDistrict([]);
-    setSubdistrict([]);
-    
-    // Reset form fields
-    form.setFieldsValue({ 
-      DistrictID: undefined, 
-      SubdistrictID: undefined 
-    });
-    
-    if (value) {
-      onGetDistrict(value);
-    }
-  };
-
-  // Handle district change
-  const handleDistrictChange = (value: number | undefined) => {
-    setSelectedDistrict(value || null);
-    setSubdistrict([]);
-    
-    // Reset subdistrict field
-    form.setFieldsValue({ SubdistrictID: undefined });
-    
-    if (value) {
-      onGetSubdistrict(value);
-    }
-  };
-
-  // Load initial data on component mount
   useEffect(() => {
-    onGetProvince();
-    onGetGuide();
+    void onGetProvince();
+    void onGetGuides();
   }, []);
+
+  // สร้าง options
+  const provinceOptions = (Array.isArray(province) ? province : []).map((item: any) => ({
+    label: getProvinceLabel(item),
+    value: item.ID as number,
+  }));
+  const districtOptions = (Array.isArray(district) ? district : []).map((item: any) => ({
+    label: getDistrictLabel(item),
+    value: item.ID as number,
+  }));
+  const subdistrictOptions = (Array.isArray(subdistrict) ? subdistrict : []).map((item: any) => ({
+    label: getSubdistrictLabel(item),
+    value: item.ID as number,
+  }));
+  const guideOptions = (Array.isArray(guides) ? guides : []).map((item: any) => ({
+    label: getGuideLabel(item),
+    value: item.ID as number,
+  }));
 
   return (
     <div>
       {contextHolder}
-      <Card>
-        <h2>เพิ่มข้อมูลแพ็คเกจทัวร์</h2>
+      <Card variant="outlined">
+        <h2>เพิ่มข้อมูล แพ็คเกจ</h2>
         <Divider />
-        
         <Form
           form={form}
           name="package-create"
@@ -283,200 +210,149 @@ function PackageCreate() {
           onFinish={onFinish}
           autoComplete="off"
         >
-          <Row gutter={[16, 16]}>
+          <Row gutter={[16, 0]}>
             {/* ชื่อแพ็คเกจ */}
-            <Col xs={24} sm={24} md={12} lg={12}>
+            <Col xs={24} sm={24} md={24} lg={12}>
               <Form.Item
                 label="ชื่อแพ็คเกจ"
                 name="Name"
-                rules={[
-                  { required: true, message: "กรุณากรอกชื่อแพ็คเกจ" },
-                  { min: 2, message: "ชื่อแพ็คเกจต้องมีความยาวอย่างน้อย 2 ตัวอักษร" },
-                  { max: 200, message: "ชื่อแพ็คเกจต้องมีความยาวไม่เกิน 200 ตัวอักษร" }
-                ]}
+                rules={[{ required: true, message: "กรุณากรอกชื่อแพ็คเกจ !" }]}
               >
-                <Input 
-                  placeholder="กรอกชื่อแพ็คเกจทัวร์" 
-                  disabled={submitting}
-                />
+                <Input />
               </Form.Item>
             </Col>
 
             {/* จำนวนคน */}
-            <Col xs={24} sm={24} md={12} lg={12}>
+            <Col xs={24} sm={24} md={24} lg={12}>
               <Form.Item
                 label="จำนวนคน"
                 name="People"
-                rules={[
-                  { required: true, message: "กรุณากรอกจำนวนคน" },
-                  { type: 'number', min: 1, message: "จำนวนคนต้องมากกว่า 0" }
-                ]}
+                rules={[{ required: true, message: "กรุณากรอกจำนวนคน !" }]}
               >
-                <InputNumber
-                  placeholder="กรอกจำนวนคน"
-                  disabled={submitting}
-                  style={{ width: '100%' }}
-                  min={1}
-                  max={100}
-                />
+                <InputNumber min={1} max={100} style={{ width: "100%" }} />
               </Form.Item>
             </Col>
 
-            {/* ช่วงวันที่ */}
-            <Col xs={24} sm={24} md={12} lg={12}>
+            {/* วันที่เริ่ม-สิ้นสุด */}
+            <Col xs={24} sm={24} md={24} lg={12}>
               <Form.Item
-                label="ช่วงวันที่"
-                name="dateRange"
-                rules={[{ required: true, message: "กรุณาเลือกช่วงวันที่" }]}
+                label="วันที่เริ่มต้น - วันที่สิ้นสุด"
+                name="DateRange"
+                rules={[{ required: true, message: "กรุณาเลือกวันที่ !" }]}
               >
-                <RangePicker
-                  placeholder={["วันเริ่มต้น", "วันสิ้นสุด"]}
-                  disabled={submitting}
-                  style={{ width: '100%' }}
-                  disabledDate={(current) => current && current < dayjs().startOf('day')}
-                />
+                <RangePicker style={{ width: "100%" }} />
               </Form.Item>
             </Col>
 
             {/* ราคา */}
-            <Col xs={24} sm={24} md={12} lg={12}>
+            <Col xs={24} sm={24} md={24} lg={12}>
               <Form.Item
                 label="ราคา (บาท)"
                 name="Price"
-                rules={[
-                  { required: true, message: "กรุณากรอกราคา" },
-                  { type: 'number', min: 1, message: "ราคาต้องมากกว่า 0" }
-                ]}
+                rules={[{ required: true, message: "กรุณากรอกราคา !" }]}
               >
-                <InputNumber
-                  placeholder="กรอกราคา"
-                  disabled={submitting}
-                  style={{ width: '100%' }}
-                  min={1}
-                  formatter={(value) => `${value}`.replace(/\B(?=(\d{3})+(?!\d))/g, ',')}
-                  parser={(value) => value!.replace(/\$\s?|(,*)/g, '')}
-                />
-              </Form.Item>
-            </Col>
-
-            {/* ไกด์ */}
-            <Col xs={24} sm={24} md={12} lg={12}>
-              <Form.Item
-                label="ไกด์"
-                name="GuideID"
-                rules={[{ required: true, message: "กรุณาเลือกไกด์" }]}
-              >
-                <Select
-                  placeholder="เลือกไกด์"
-                  allowClear
-                  loading={loadingGuide}
-                  disabled={submitting}
-                  showSearch
-                  filterOption={(input, option) =>
-                    (option?.label ?? '').toLowerCase().includes(input.toLowerCase())
-                  }
-                  options={guide.map((item) => ({
-                    label: `${item.Name} `,
-                    value: item.ID,
-                  }))}
-                />
+                <Input />
               </Form.Item>
             </Col>
 
             {/* จังหวัด */}
-            <Col xs={24} sm={24} md={12} lg={12}>
+            <Col xs={24} sm={24} md={24} lg={12}>
               <Form.Item
                 label="จังหวัด"
                 name="ProvinceID"
-                rules={[{ required: true, message: "กรุณาเลือกจังหวัด" }]}
+                rules={[{ required: true, message: "กรุณาเลือกจังหวัด !" }]}
               >
                 <Select
                   placeholder="เลือกจังหวัด"
                   allowClear
-                  loading={loadingProvince}
-                  disabled={submitting}
                   showSearch
-                  filterOption={(input, option) =>
-                    (option?.label ?? '').toLowerCase().includes(input.toLowerCase())
-                  }
-                  options={province.map((item) => ({
-                    label: item.NameTh,
-                    value: item.ID,
-                  }))}
-                  onChange={handleProvinceChange}
+                  optionFilterProp="label"
+                  loading={loadingProvince}
+                  options={provinceOptions}
+                  onChange={(value?: number) => {
+                    setSelectedProvince(value ?? null);
+                    setSelectedDistrict(null);
+                    setSubdistrict([]);
+                    form.setFieldsValue({ DistrictID: undefined, SubdistrictID: undefined });
+                    if (typeof value === "number") void onGetDistrict(value);
+                  }}
                 />
               </Form.Item>
             </Col>
 
             {/* อำเภอ */}
-            <Col xs={24} sm={24} md={12} lg={12}>
+            <Col xs={24} sm={24} md={24} lg={12}>
               <Form.Item
                 label="อำเภอ"
                 name="DistrictID"
-                rules={[{ required: true, message: "กรุณาเลือกอำเภอ" }]}
+                rules={[{ required: true, message: "กรุณาเลือกอำเภอ !" }]}
               >
                 <Select
                   placeholder="เลือกอำเภอ"
                   allowClear
-                  disabled={!selectedProvince || submitting}
-                  loading={loadingDistrict}
+                  disabled={!selectedProvince}
                   showSearch
-                  filterOption={(input, option) =>
-                    (option?.label ?? '').toLowerCase().includes(input.toLowerCase())
-                  }
-                  options={district.map((item) => ({
-                    label: item.NameTh,
-                    value: item.ID,
-                  }))}
-                  onChange={handleDistrictChange}
-                  notFoundContent={!selectedProvince ? "กรุณาเลือกจังหวัดก่อน" : "ไม่พบข้อมูล"}
+                  optionFilterProp="label"
+                  loading={loadingDistrict}
+                  options={districtOptions}
+                  onChange={(value?: number) => {
+                    setSelectedDistrict(value ?? null);
+                    form.setFieldsValue({ SubdistrictID: undefined });
+                    if (typeof value === "number") void onGetSubdistrict(value);
+                    else setSubdistrict([]);
+                  }}
                 />
               </Form.Item>
             </Col>
 
             {/* ตำบล */}
-            <Col xs={24} sm={24} md={12} lg={12}>
+            <Col xs={24} sm={24} md={24} lg={12}>
               <Form.Item
                 label="ตำบล"
                 name="SubdistrictID"
-                rules={[{ required: true, message: "กรุณาเลือกตำบล" }]}
+                rules={[{ required: true, message: "กรุณาเลือกตำบล !" }]}
               >
                 <Select
                   placeholder="เลือกตำบล"
                   allowClear
-                  disabled={!selectedDistrict || submitting}
-                  loading={loadingSubdistrict}
+                  disabled={!selectedDistrict}
                   showSearch
-                  filterOption={(input, option) =>
-                    (option?.label ?? '').toLowerCase().includes(input.toLowerCase())
-                  }
-                  options={subdistrict.map((item) => ({
-                    label: item.NameTh,
-                    value: item.ID,
-                  }))}
-                  notFoundContent={!selectedDistrict ? "กรุณาเลือกอำเภอก่อน" : "ไม่พบข้อมูล"}
+                  optionFilterProp="label"
+                  loading={loadingSubdistrict}
+                  options={subdistrictOptions}
+                />
+              </Form.Item>
+            </Col>
+
+            {/* ไกด์ */}
+            <Col xs={24} sm={24} md={24} lg={12}>
+              <Form.Item
+                label="ไกด์"
+                name="GuideID"
+                rules={[{ required: true, message: "กรุณาเลือกไกด์ !" }]}
+              >
+                <Select
+                  placeholder="เลือกไกด์"
+                  allowClear
+                  showSearch
+                  optionFilterProp="label"
+                  loading={loadingGuides}
+                  options={guideOptions}
                 />
               </Form.Item>
             </Col>
           </Row>
 
-          {/* Action Buttons */}
+          {/* ปุ่ม */}
           <Row justify="end">
-            <Col style={{ marginTop: 24 }}>
+            <Col style={{ marginTop: 40 }}>
               <Form.Item>
                 <Space>
                   <Link to="/package">
-                    <Button disabled={submitting}>
-                      ยกเลิก
-                    </Button>
+                    <Button htmlType="button">ยกเลิก</Button>
                   </Link>
-                  <Button 
-                    type="primary" 
-                    htmlType="submit" 
-                    icon={<PlusOutlined />}
-                    loading={submitting}
-                  >
-                    {submitting ? "กำลังบันทึก..." : "บันทึก"}
+                  <Button type="primary" htmlType="submit" icon={<PlusOutlined />}>
+                    ยืนยัน
                   </Button>
                 </Space>
               </Form.Item>

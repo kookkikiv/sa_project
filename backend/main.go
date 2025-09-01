@@ -51,13 +51,16 @@ func main() {
 
 		// Package routes
 		packageRoutes := api.Group("/package")
-		{
-			packageRoutes.POST("", controller.CreatePackage)
-			packageRoutes.GET("", controller.FindPackage)
-			packageRoutes.PUT("/update", controller.UpdatePackage)
-			packageRoutes.GET("/:id", controller.FindPackageById)
-			packageRoutes.DELETE("/:id", controller.DeletePackageById)
-		}
+{
+    packageRoutes.GET("", controller.FindPackage)
+    packageRoutes.GET("/stats", controller.GetPackageStats)
+    packageRoutes.GET("/search", controller.SearchPackages)
+    packageRoutes.GET("/:id", controller.FindPackageById)
+    packageRoutes.POST("", controller.CreatePackage)
+    packageRoutes.PUT("/:id", controller.UpdatePackageById)
+    packageRoutes.PUT("/update", controller.UpdatePackage)
+    packageRoutes.DELETE("/:id", controller.DeletePackageById)
+}
 
 		// Thailand routes
 		thailandRoutes := api.Group("/thailand")
@@ -106,13 +109,15 @@ func main() {
 	r.DELETE("/accommodation/:id", controller.DeleteAccommodationById)
 
 	// Package routes
-	r.POST("/new-package", controller.CreatePackage)
-	r.POST("/package", controller.CreatePackage) // Alternative route
-	r.GET("/package", controller.FindPackage)
-	r.PUT("/package/update", controller.UpdatePackage)
-	r.PUT("/package/:id", controller.UpdatePackageById) // Add individual update
-	r.GET("/package/:id", controller.FindPackageById)
-	r.DELETE("/package/:id", controller.DeletePackageById)
+r.GET("/package", controller.FindPackage)
+r.GET("/package/stats", controller.GetPackageStats)
+r.GET("/package/search", controller.SearchPackages)
+r.GET("/package/:id", controller.FindPackageById)
+r.POST("/package", controller.CreatePackage)
+r.POST("/new-package", controller.CreatePackage) // Alternative route
+r.PUT("/package/:id", controller.UpdatePackageById)
+r.PUT("/package/update", controller.UpdatePackage)
+r.DELETE("/package/:id", controller.DeletePackageById)
 
 	// Guide routes (missing)
 	r.GET("/guide", controller.FindGuide)

@@ -1,4 +1,3 @@
-// frontend/src/routes/AdminRoutes.tsx - Fixed routing
 import { lazy } from "react";
 import { type RouteObject } from "react-router-dom";
 import Loadable from "../components/third-patry/Loadable";
@@ -15,6 +14,12 @@ const EditAccommodation = Loadable(lazy(() => import("../pages/Accommodation/edi
 const Package = Loadable(lazy(() => import("../pages/Package")));
 const CreatePackage = Loadable(lazy(() => import("../pages/Package/create")));
 const EditPackage = Loadable(lazy(() => import("../pages/Package/edit")));
+const Room = Loadable(lazy(() => import("../pages/Room")));
+const CreateRoom = Loadable(lazy(() => import("../pages/Room/create")));
+const EditRoom = Loadable(lazy(() => import("../pages/Room/edit")));
+const Facility = Loadable(lazy(() => import("../pages/Room")));
+const CreateFacility = Loadable(lazy(() => import("../pages/Room/create")));
+const EditFacility = Loadable(lazy(() => import("../pages/Room/edit")));
 
 const AdminRoutes = (isLoggedIn: boolean): RouteObject => {
   return {
@@ -48,6 +53,22 @@ const AdminRoutes = (isLoggedIn: boolean): RouteObject => {
           { index: true, element: <Package /> },          
           { path: "create", element: <CreatePackage /> }, 
           { path: "edit/:id", element: <EditPackage /> }, 
+        ],
+      },
+      {
+        path: "room/*", // Fixed: Added /*
+        children: [
+          { index: true, element: <Room /> },          
+          { path: "create", element: <CreateRoom /> }, 
+          { path: "edit/:id", element: <EditRoom /> }, 
+        ],
+      },
+            {
+        path: "facility/*", // Fixed: Added /*
+        children: [
+          { index: true, element: <Facility /> },          
+          { path: "create", element: <CreateFacility /> }, 
+          { path: "edit/:id", element: <EditFacility /> }, 
         ],
       },
     ],

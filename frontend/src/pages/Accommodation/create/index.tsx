@@ -40,25 +40,14 @@ function AccommodationCreate() {
   const [selectedProvince, setSelectedProvince] = useState<number | null>(null);
   const [selectedDistrict, setSelectedDistrict] = useState<number | null>(null);
 
-  // ---------- Helpers ----------
-  // ดึง array ออกจาก response รูปแบบต่าง ๆ
+  // Helper functions to safely extract data arrays
   const asArray = <T,>(val: any): T[] =>
     Array.isArray(val) ? (val as T[])
     : Array.isArray(val?.data) ? (val.data as T[])
     : Array.isArray(val?.items) ? (val.items as T[])
     : [];
 
-  // map label จาก key ที่เป็นไปได้ (กัน backend ตั้งชื่อไม่ตรง)
-  const getProvinceLabel = (p: any) =>
-    p.NameTh || p.NameTH || p.ProvinceNameTh || p.ProvinceNameTH || p.Name || p.ThaiName || String(p.ID);
-
-  const getDistrictLabel = (d: any) =>
-    d.NameTh || d.NameTH || d.DistrictNameTh || d.DistrictNameTH || d.Name || d.ThaiName || String(d.ID);
-
-  const getSubdistrictLabel = (s: any) =>
-    s.NameTh || s.NameTH || s.SubdistrictNameTh || s.SubdistrictNameTH || s.Name || s.ThaiName || String(s.ID);
-
-  // ---------- Fetch ----------
+  // Fetch functions
   const onGetProvince = async () => {
     try {
       setLoadingProvince(true);
@@ -115,7 +104,7 @@ function AccommodationCreate() {
     }
   };
 
-  // ---------- Submit ----------
+  // Submit function
   const onFinish = async (values: AccommodationInterface) => {
     try {
       const adminId = localStorage.getItem("id");
@@ -145,24 +134,9 @@ function AccommodationCreate() {
     void onGetProvince();
   }, []);
 
-  // สร้าง options ล่วงหน้า (อ่านง่าย + reuse)
-  const provinceOptions = (Array.isArray(province) ? province : []).map((item: any) => ({
-    label: getProvinceLabel(item),
-    value: item.ID as number,
-  }));
-  const districtOptions = (Array.isArray(district) ? district : []).map((item: any) => ({
-    label: getDistrictLabel(item),
-    value: item.ID as number,
-  }));
-  const subdistrictOptions = (Array.isArray(subdistrict) ? subdistrict : []).map((item: any) => ({
-    label: getSubdistrictLabel(item),
-    value: item.ID as number,
-  }));
-
   return (
     <div>
       {contextHolder}
-      {/* ถ้าเคยใช้ bordered ให้เปลี่ยนเป็น variant แทนใน antd v5 */}
       <Card variant="outlined">
         <h2>เพิ่มข้อมูล ที่พัก</h2>
         <Divider />
@@ -192,13 +166,11 @@ function AccommodationCreate() {
                 name="Type"
                 rules={[{ required: true, message: "กรุณาเลือกลักษณะที่พัก !" }]}
               >
-                <Select placeholder="เลือกประเภทที่พัก" allowClear showSearch optionFilterProp="label"
-                  options={[
-                    { label: "โรงแรม", value: "hotel" },
-                    { label: "รีสอร์ท", value: "resort" },
-                    { label: "โฮสเทล", value: "hostel" },
-                  ]}
-                />
+                <Select placeholder="เลือกประเภทที่พัก" allowClear showSearch optionFilterProp="label">
+                  <Select.Option value="hotel">โรงแรม</Select.Option>
+                  <Select.Option value="resort">รีสอร์ท</Select.Option>
+                  <Select.Option value="hostel">โฮสเทล</Select.Option>
+                </Select>
               </Form.Item>
             </Col>
 
@@ -209,12 +181,10 @@ function AccommodationCreate() {
                 name="Status"
                 rules={[{ required: true, message: "กรุณาเลือกสถานะที่พัก !" }]}
               >
-                <Select placeholder="เลือกสถานะที่พัก" allowClear showSearch optionFilterProp="label"
-                  options={[
-                    { label: "เปิดใช้บริการ", value: "open" },
-                    { label: "ปิดปรับปรุง", value: "closed" },
-                  ]}
-                />
+                <Select placeholder="เลือกสถานะที่พัก" allowClear showSearch optionFilterProp="label">
+                  <Select.Option value="open">เปิดใช้บริการ</Select.Option>
+                  <Select.Option value="closed">ปิดปรับปรุง</Select.Option>
+                </Select>
               </Form.Item>
             </Col>
 
@@ -229,9 +199,8 @@ function AccommodationCreate() {
                   placeholder="เลือกจังหวัด"
                   allowClear
                   showSearch
-                  optionFilterProp="label"
+                  optionFilterProp="children"
                   loading={loadingProvince}
-                  options={provinceOptions}
                   onChange={(value?: number) => {
                     setSelectedProvince(value ?? null);
                     setSelectedDistrict(null);
@@ -239,7 +208,18 @@ function AccommodationCreate() {
                     form.setFieldsValue({ DistrictID: undefined, SubdistrictID: undefined });
                     if (typeof value === "number") void onGetDistrict(value);
                   }}
-                />
+                  filterOption={(input, option) =>
+                    (option?.children as unknown as string)
+                      ?.toLowerCase()
+                      ?.includes(input.toLowerCase()) ?? false
+                  }
+                >
+                  {province.map((item) => (
+                    <Select.Option key={item.ID} value={item.ID}>
+                      {item.NameTh || item.NameEn || `จังหวัด ${item.ID}`}
+                    </Select.Option>
+                  ))}
+                </Select>
               </Form.Item>
             </Col>
 
@@ -255,16 +235,26 @@ function AccommodationCreate() {
                   allowClear
                   disabled={!selectedProvince}
                   showSearch
-                  optionFilterProp="label"
+                  optionFilterProp="children"
                   loading={loadingDistrict}
-                  options={districtOptions}
                   onChange={(value?: number) => {
                     setSelectedDistrict(value ?? null);
                     form.setFieldsValue({ SubdistrictID: undefined });
                     if (typeof value === "number") void onGetSubdistrict(value);
                     else setSubdistrict([]);
                   }}
-                />
+                  filterOption={(input, option) =>
+                    (option?.children as unknown as string)
+                      ?.toLowerCase()
+                      ?.includes(input.toLowerCase()) ?? false
+                  }
+                >
+                  {district.map((item) => (
+                    <Select.Option key={item.ID} value={item.ID}>
+                      {item.NameTh || item.NameEn || `อำเภอ ${item.ID}`}
+                    </Select.Option>
+                  ))}
+                </Select>
               </Form.Item>
             </Col>
 
@@ -280,10 +270,20 @@ function AccommodationCreate() {
                   allowClear
                   disabled={!selectedDistrict}
                   showSearch
-                  optionFilterProp="label"
+                  optionFilterProp="children"
                   loading={loadingSubdistrict}
-                  options={subdistrictOptions}
-                />
+                  filterOption={(input, option) =>
+                    (option?.children as unknown as string)
+                      ?.toLowerCase()
+                      ?.includes(input.toLowerCase()) ?? false
+                  }
+                >
+                  {subdistrict.map((item) => (
+                    <Select.Option key={item.ID} value={item.ID}>
+                      {item.NameTh || item.NameEn || `ตำบล ${item.ID}`}
+                    </Select.Option>
+                  ))}
+                </Select>
               </Form.Item>
             </Col>
           </Row>

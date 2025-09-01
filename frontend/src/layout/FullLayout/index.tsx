@@ -1,7 +1,14 @@
-import React, { useState } from "react";
-import { Routes, Route, Link } from "react-router-dom";
+import React, { useState, useMemo } from "react";
+import { Routes, Route, Link, useLocation, useNavigate } from "react-router-dom";
+import type { MenuProps } from "antd";
 import "../../App.css";
-import { UserOutlined, DashboardOutlined, HomeOutlined,GlobalOutlined } from "@ant-design/icons";
+import {
+  UserOutlined,
+  DashboardOutlined,
+  HomeOutlined,
+  GlobalOutlined,
+  ToolOutlined,
+} from "@ant-design/icons";
 import { Breadcrumb, Layout, Menu, theme, Button, message } from "antd";
 import logo from "../../assets/logo.png";
 import Dashboard from "../../pages/dashboard";
@@ -11,11 +18,25 @@ import AdminEdit from "../../pages/Admin/edit";
 import Accommodation from "../../pages/Accommodation";
 import AccommodationCreate from "../../pages/Accommodation/create";
 import AccommodationEdit from "../../pages/Accommodation/edit";
+import Room from "../../pages/Room";
+import RoomCreate from "../../pages/Room/create";
+import RoomEdit from "../../pages/Room/edit";
+import Facility from "../../pages/Facility";
+import FacilityCreate from "../../pages/Facility/create";
+import FacilityEdit from "../../pages/Facility/edit";
+import Package from "../../pages/Package";
+import PackageCreate from "../../pages/Package/create";
+import PackageEdit from "../../pages/Package/edit";
+
+
 
 const { Header, Content, Footer, Sider } = Layout;
 
 const FullLayout: React.FC = () => {
-  const page = localStorage.getItem("page");
+  const routerLocation = useLocation();         
+  const navigate = useNavigate();                
+  const path = routerLocation.pathname;
+
   const [messageApi, contextHolder] = message.useMessage();
   const [collapsed, setCollapsed] = useState(false);
 
@@ -31,12 +52,27 @@ const FullLayout: React.FC = () => {
     localStorage.clear();
     messageApi.success("Logout successful");
     setTimeout(() => {
-      location.href = "/";
-    }, 2000);
+      navigate("/"); // <-- แทน location.href = "/"
+    }, 1200);
   };
 
-  // แก้ไข: ย้าย items ออกมาข้างนอก และแก้ไข syntax
-  const items = [
+  const selectedKey = useMemo<string>(() => {
+    if (path.startsWith("/accommodation/rooms")) return "accommodation/rooms";
+    if (path.startsWith("/accommodation/facility")) return "accommodation/facility";
+    if (path.startsWith("/accommodation")) return "accommodation/list";
+    if (path.startsWith("/admin")) return "admin";
+    if (path.startsWith("/package")) return "package";
+    return "dashboard";
+  }, [path]);
+  const [openKeys, setOpenKeys] = useState<string[]>(
+    path.startsWith("/accommodation") ? ["accommodation"] : []
+  );
+
+  const onOpenChange: MenuProps["onOpenChange"] = (keys) => {
+    setOpenKeys(keys as string[]);
+  };
+
+  const items: MenuProps["items"] = [
     {
       key: "dashboard",
       icon: <DashboardOutlined />,
@@ -50,15 +86,34 @@ const FullLayout: React.FC = () => {
       onClick: () => setCurrentPage("admin"),
     },
     {
-      key: "accommodation", // แก้ไขการสะกด
+      key: "accommodation",
       icon: <HomeOutlined />,
-      label: <Link to="/accommodation">ข้อมูลที่พัก</Link>, // แก้ไข path
-      onClick: () => setCurrentPage("accommodation"),
+      label: "ข้อมูลที่พัก",
+      children: [
+        {
+          key: "accommodation/list",
+          icon: <HomeOutlined />,
+          label: <Link to="/accommodation">ที่พัก</Link>,
+          onClick: () => setCurrentPage("accommodation"),
+        },
+        {
+          key: "accommodation/room",
+          icon: <HomeOutlined />,
+          label: <Link to="/accommodation/room">ห้อง</Link>,
+          onClick: () => setCurrentPage("accommodation-room"),
+        },
+        {
+          key: "accommodation/facility",
+          icon: <ToolOutlined />,
+          label: <Link to="/accommodation/facility">สิ่งอำนวยความสะดวก</Link>,
+          onClick: () => setCurrentPage("accommodation-facility"),
+        },
+      ],
     },
     {
-      key: "package", // แก้ไขการสะกด
+      key: "package",
       icon: <GlobalOutlined />,
-      label: <Link to="/package">ข้อมูลแพ็คเกจ</Link>, // แก้ไข path
+      label: <Link to="/package">ข้อมูลแพ็คเกจ</Link>,
       onClick: () => setCurrentPage("package"),
     },
   ];
@@ -88,19 +143,16 @@ const FullLayout: React.FC = () => {
                 marginBottom: 20,
               }}
             >
-              <img
-                src={logo}
-                alt="Logo"
-                style={{ width: "80%" }}
-              />
+              <img src={logo} alt="Logo" style={{ width: "80%" }} />
             </div>
 
-            {/* แก้ไข: ใช้ Menu component อย่างเดียว */}
             <Menu
               theme="dark"
-              defaultSelectedKeys={[page ? page : "dashboard"]}
               mode="inline"
               items={items}
+              selectedKeys={[selectedKey]}
+              openKeys={openKeys}
+              onOpenChange={onOpenChange}
             />
           </div>
 
@@ -109,6 +161,7 @@ const FullLayout: React.FC = () => {
           </Button>
         </div>
       </Sider>
+
       <Layout>
         <Header style={{ padding: 0, background: colorBgContainer }} />
         <Content style={{ margin: "0 16px" }}>
@@ -128,12 +181,21 @@ const FullLayout: React.FC = () => {
               <Route path="/accommodation" element={<Accommodation />} />
               <Route path="/accommodation/create" element={<AccommodationCreate />} />
               <Route path="/accommodation/edit/:id" element={<AccommodationEdit />} />
+              <Route path="/accommodation/room" element={<Room />} />
+              <Route path="/accommodation/room/create" element={<RoomCreate />} />
+              <Route path="/accommodation/room/edit/:id" element={<RoomEdit />} />
+              <Route path="/accommodation/facility" element={<Facility />} />
+              <Route path="/accommodation/facility/create" element={<FacilityCreate />} />
+              <Route path="/accommodation/facility/edit/:id" element={<FacilityEdit />} />
+              <Route path="/package" element={<Package />} />
+              <Route path="/package/create" element={<PackageCreate />} />
+              <Route path="/package/edit/:id" element={<PackageEdit />} />
             </Routes>
           </div>
         </Content>
 
         <Footer style={{ textAlign: "center" }}>
-          System Analysis and Design        
+          System Analysis and Design
         </Footer>
       </Layout>
     </Layout>
