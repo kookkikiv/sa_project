@@ -65,6 +65,7 @@ func SetupDatabase() {
 		&entity.Province{},
 		&entity.Subdistrict{},
 		&entity.Admin{},
+		&entity.PackageStay{},
 		
 
 	

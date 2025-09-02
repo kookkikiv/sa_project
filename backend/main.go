@@ -99,9 +99,9 @@ func main() {
 		facilityRoutes := api.Group("/facility")
 		{
 			facilityRoutes.GET("", controller.FindFacility)
-			facilityRoutes.GET("/stats", controller.GetFacilityStats)
-			facilityRoutes.GET("/search", controller.SearchFacilities)
-			facilityRoutes.GET("/types", controller.GetFacilityTypes)
+			// facilityRoutes.GET("/stats", controller.GetFacilityS)
+			// facilityRoutes.GET("/search", controller.SearchFacilities)
+			// facilityRoutes.GET("/types", controller.GetFacilityTypes)
 			facilityRoutes.GET("/:id", controller.FindFacilityById)
 			facilityRoutes.POST("", controller.CreateFacility)
 			facilityRoutes.PUT("/:id", controller.UpdateFacilityById)
