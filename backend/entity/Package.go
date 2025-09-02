@@ -24,13 +24,11 @@ type Package struct {
 	Subdistrict   Subdistrict `gorm:"foreignKey:SubdistrictID"`
 	AdminID *uint    `json:"admin_id"`
 	Admin   Admin `gorm:"foreignKey:AdminID"`
-	LocationID *uint    `json:"location_id"`
-	Location   Location `gorm:"foreignKey:LocationID;references:ID"`	
+	
 
 	Accommodation []Accommodation `gorm:"many2many:accommodation_package"`
 	Event []Event `gorm:"many2many:event_package"`
-	CartItem []CartItems `gorm:"foreignKey:package_id"`
-	EventPackage []EventPackage `gorm:"foreignKey:PackageID"`
+
 	// ความสัมพันธ์ที่พัก/ห้อง (ใหม่)
     Stays []PackageStay `gorm:"foreignKey:PackageID;constraint:OnUpdate:CASCADE,OnDelete:CASCADE;" json:"stays,omitempty"`
 

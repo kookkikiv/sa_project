@@ -27,60 +27,34 @@ func ConnectionDB() {
 }
 
 func SetupDatabase() {
-	db.AutoMigrate(
-		&entity.ApplicationHistory{},
-		&entity.GuideApplication{},
-		&entity.ApplicationStatus{},
-		&entity.Member{},
-		&entity.ServiceArea{},
-		&entity.ProvinceArea{},
-		&entity.GuideType{},
-		&entity.Booking{},
-		&entity.BookingDetail{},
-		&entity.Card{},
-		&entity.Facility{},
-		&entity.Location{},
-		&entity.Paymentdetail{},
-		&entity.PaymentType{},
-		&entity.PhysicalRoom{},
-		&entity.Receipt{},
-		&entity.Room{},
-		&entity.Accommodation{},
-		&entity.RoomAvailability{},
-		&entity.Guide{},
-		&entity.Language{},
-		&entity.Package{},
-		&entity.Event{},
-		&entity.EventPackage{},
-		&entity.EventType{},
-		&entity.Cart{},
-		&entity.CartItems{},
-		&entity.Cetagory{},
-		&entity.Notification{},
-		&entity.Review{},
-	    &entity.ReviewBooking{},
-		&entity.ReviewImage{},
-		&entity.BookingItem{},
-		&entity.District{},
-		&entity.Package{},
-		&entity.Province{},
-		&entity.Subdistrict{},
-		&entity.Admin{},
-		&entity.PackageStay{},
-	)
+// AutoMigrate ก่อน
+    db.AutoMigrate(
+        &entity.Province{},    
+        &entity.District{}, 
+        &entity.Subdistrict{}, 
+        &entity.Admin{},       // ย้ายมาก่อน
+        &entity.Guide{},       // ย้ายมาก่อน
+        &entity.Facility{},    // ย้ายมาก่อน
+        &entity.Accommodation{},
+        &entity.Event{},
+        &entity.Room{},
+        &entity.Package{},     // ย้ายมาหลัง
+
+    )
+
 
 	hashedPassword, _ := HashPassword("123456")
 
 	BirthDay, _ := time.Parse("2006-01-02", "1990-01-01")
 
-	Member := &entity.Member{
-		Username:   "testuser",
+	Admin := &entity.Admin{
+		UserName:   "Sa",
 		Password:   hashedPassword,
-		Email:      "test@gmail.com",
-		First_Name: "Test",
-		Last_Name:  "User",
+		Email:      "sa@gmail.com",
+		FirstName: "Sa",
+		LastName:  "Admin",
 		BirthDay:   BirthDay,
 		Tel:        "1234567890",
 	}
-	db.FirstOrCreate(Member, entity.Member{Email: Member.Email})
+	db.FirstOrCreate(Admin, entity.Admin{Email: Admin.Email})
 }

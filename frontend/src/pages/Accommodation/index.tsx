@@ -164,6 +164,9 @@ function Accommodation() {
         const pCode = getProvinceCode(r);
         const dCode = getDistrictCode(r);
         const sCode = getSubdistrictCode(r);
+        const Name   = r.Name   ?? r.name   ?? "";
+        const Type   = r.Type   ?? r.type   ?? "";
+        const Status = r.Status ?? r.status ?? "";
 
         const provinceName =
           (r.Province && getProvinceLabel(r.Province)) ||
@@ -183,7 +186,7 @@ function Accommodation() {
           subdistrictByCode[String(sCode)] ||
           r.subdistrictNameTh || r.subdistrict_name_th || "";
 
-        return { ...r, provinceName, districtName, subdistrictName };
+        return { ...r, Name,Type,Status,provinceName, districtName, subdistrictName };
       });
 
       setAcc(enriched);

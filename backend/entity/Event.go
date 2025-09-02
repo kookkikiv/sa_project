@@ -1,28 +1,30 @@
 package entity
 
 import (
-	"gorm.io/gorm"
 	"time"
+	"gorm.io/gorm"
 )
 
 type Event struct {
-	gorm.Model
-	Event_Name string    `json:"event_name"`
-	Added_At   time.Time `json:"added_at"`
-	Price      float64   `json:"price"`
-	Host       string    `json:"host"`
-	Status     string    `json:"status"`
+    gorm.Model
+    Event_Name string    `json:"event_name"`
+    Added_At   time.Time `json:"added_at"`
+    Price      float64   `json:"price"`
+    Host       string    `json:"host"`
+    Status     string    `json:"status"`
 
-	Event_Type_ID uint       `json:"event_type_id"`
-	Event_type    *EventType `gorm:"foreignKey:Event_Type_ID" json:"event_type"`
+    // ผู้ดูแล
+    AdminID *uint `json:"admin_id"`
+    Admin   Admin `gorm:"foreignKey:AdminID;references:ID"`
 
-	Admin_ID uint   `json:"admin_id"`
-	Admin    *Admin `gorm:"foreignKey:AdminID" json:"admin"`
+    // === เพิ่ม 3 FK ด้านล่าง ให้ตรงกับ Province.Events / District.Events / Subdistrict.Event ===
+    ProvinceID    *uint      `json:"province_id"`
+    Province      Province   `gorm:"foreignKey:ProvinceID;references:ID"`
+    DistrictID    *uint      `json:"district_id"`
+    District      District   `gorm:"foreignKey:DistrictID;references:ID"`
+    SubdistrictID *uint      `json:"subdistrict_id"`
+    Subdistrict   Subdistrict`gorm:"foreignKey:SubdistrictID;references:ID"`
 
-	LocationID *uint    `json:"location_id"`
-	Location   Location `gorm:"foreignKey:LocationID;references:ID"`
-
-	Packages     []Package      `gorm:"many2many:event_package"`
-	CartItems    []CartItems    `gorm:"foreignKey:Event_ID"`
-	EventPackage []EventPackage `gorm:"foreignKey:EventID"`
+    // ความสัมพันธ์อื่น
+    Packages []Package `gorm:"many2many:event_package"`
 }
