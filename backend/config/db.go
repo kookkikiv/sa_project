@@ -1,60 +1,64 @@
 package config
 
 import (
-	"gorm.io/gorm"
-	"time"
 	"fmt"
+	"time"
+
 	"gorm.io/driver/sqlite"
+	"gorm.io/gorm"
+
 	"github.com/kookkikiv/sa_project/backend/entity"
 )
 
 var db *gorm.DB
 
-func DB() *gorm.DB {
-	return db
-}
+func DB() *gorm.DB { return db }
 
 func ConnectionDB() {
-	
 	database, err := gorm.Open(sqlite.Open("project2.db?cache=shared"), &gorm.Config{})
 	if err != nil {
 		fmt.Printf("Failed to connect to database: %v\n", err)
 		panic(err)
 	}
+	db = database
+
+	// เปิด foreign keys สำหรับ SQLite
+	db.Exec("PRAGMA foreign_keys = ON;")
 
 	fmt.Println("Connected to database successfully")
-	db = database
 }
 
 func SetupDatabase() {
-// AutoMigrate ก่อน
-    db.AutoMigrate(
-        &entity.Province{},    
-        &entity.District{}, 
-        &entity.Subdistrict{}, 
-        &entity.Admin{},       // ย้ายมาก่อน
-        &entity.Guide{},       // ย้ายมาก่อน
-        &entity.Facility{},    // ย้ายมาก่อน
-        &entity.Accommodation{},
-        &entity.Event{},
-        &entity.Room{},
-        &entity.Package{},     // ย้ายมาหลัง
+	// ลำดับที่อ้าง FK ไปหาตารางที่มาก่อน
+	if err := db.AutoMigrate(
+		&entity.Province{},
+		&entity.District{},
+		&entity.Subdistrict{},
+		&entity.Admin{},
+		&entity.Guide{},
 
-    )
+		&entity.Accommodation{},
+		&entity.Room{},
+		&entity.Facility{},
 
+		&entity.Package{},
+		&entity.PackageStay{}, 
+		&entity.Event{},
+	); err != nil {
+		panic(err)
+	}
 
+	// seed admin แบบง่าย
 	hashedPassword, _ := HashPassword("123456")
-
-	BirthDay, _ := time.Parse("2006-01-02", "1990-01-01")
-
-	Admin := &entity.Admin{
-		UserName:   "Sa",
-		Password:   hashedPassword,
-		Email:      "sa@gmail.com",
+	bd, _ := time.Parse("2006-01-02", "1990-01-01")
+	admin := &entity.Admin{
+		UserName:  "Sa",
+		Password:  hashedPassword,
+		Email:     "sa@gmail.com",
 		FirstName: "Sa",
 		LastName:  "Admin",
-		BirthDay:   BirthDay,
-		Tel:        "1234567890",
+		BirthDay:  bd,
+		Tel:       "1234567890",
 	}
-	db.FirstOrCreate(Admin, entity.Admin{Email: Admin.Email})
+	db.FirstOrCreate(admin, entity.Admin{Email: admin.Email})
 }

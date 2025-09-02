@@ -15,7 +15,6 @@ func FindAccommodation(c *gin.Context) {
 		Preload("Province").
 		Preload("District").
 		Preload("Subdistrict").
-		Preload("Admin").
 		Find(&items).Error; err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
@@ -32,9 +31,7 @@ func FindAccommodationId(c *gin.Context) {
 		Preload("Province").
 		Preload("District").
 		Preload("Subdistrict").
-		Preload("Admin").
-		Where("id = ?", id).
-		First(&item).Error; err != nil {
+		Where("id = ?", id).First(&item).Error; err != nil {
 		c.JSON(http.StatusNotFound, gin.H{"error": "accommodation not found"})
 		return
 	}
@@ -43,26 +40,23 @@ func FindAccommodationId(c *gin.Context) {
 
 // POST /accommodation
 func CreateAccommodation(c *gin.Context) {
-	var item entity.Accommodation
-
-	if err := c.ShouldBindJSON(&item); err != nil {
+	var body entity.Accommodation
+	if err := c.ShouldBindJSON(&body); err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": "Bad request body: " + err.Error()})
 		return
 	}
-	if err := config.DB().Create(&item).Error; err != nil {
+	if err := config.DB().Create(&body).Error; err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to create accommodation: " + err.Error()})
 		return
 	}
-
-	// โหลดความสัมพันธ์ก่อนตอบกลับ
+	// รีโหลดพร้อม relations
 	config.DB().
 		Preload("Province").
 		Preload("District").
 		Preload("Subdistrict").
-		Preload("Admin").
-		First(&item, item.ID)
+		First(&body, body.ID)
 
-	c.JSON(http.StatusCreated, gin.H{"data": item, "message": "Accommodation created successfully"})
+	c.JSON(http.StatusCreated, gin.H{"data": body, "message": "Accommodation created successfully"})
 }
 
 // PUT /accommodation/:id
@@ -86,12 +80,15 @@ func UpdateAccommodationById(c *gin.Context) {
 		return
 	}
 
-	config.DB().
+	// รีโหลดพร้อม relations
+	if err := config.DB().
 		Preload("Province").
 		Preload("District").
 		Preload("Subdistrict").
-		Preload("Admin").
-		First(&item, item.ID)
+		First(&item, id).Error; err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "reload failed"})
+		return
+	}
 
 	c.JSON(http.StatusOK, gin.H{"data": item, "message": "Accommodation updated successfully"})
 }
@@ -105,11 +102,6 @@ func DeleteAccommodationById(c *gin.Context) {
 		c.JSON(http.StatusNotFound, gin.H{"error": "accommodation not found"})
 		return
 	}
-
-	// เคลียร์ many2many (ถ้ามีการตั้ง FK)
-	_ = config.DB().Model(&item).Association("Facilities").Clear()
-	_ = config.DB().Model(&item).Association("Packages").Clear()
-
 	if err := config.DB().Delete(&item, id).Error; err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to delete accommodation"})
 		return
