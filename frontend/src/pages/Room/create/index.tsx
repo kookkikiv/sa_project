@@ -21,14 +21,14 @@ import { type RoomInterface } from "../../../interface/Room";
 import { CreateRoom, GetAccommodation } from "../../../services/https";
 
 // รับเฉพาะฟิลด์ที่ใช้ใน select
-type AccommodationLite = { ID: number; Name?: string };
+type AccommodationLite = { ID: number; Name?: string; name?: string };
 
 // กัน response ที่บางทีห่อ data/items มา
 const asArray = <T,>(val: any): T[] =>
-  Array.isArray(val) ? (val as T[])
-  : Array.isArray(val?.data) ? (val.data as T[])
-  : Array.isArray(val?.items) ? (val.items as T[])
-  : [];
+  Array.isArray(val) ? (val as T[]) :
+  Array.isArray(val?.data) ? (val.data as T[]) :
+  Array.isArray(val?.items) ? (val.items as T[]) :
+  [];
 
 function RoomCreate() {
   const navigate = useNavigate();
@@ -77,20 +77,20 @@ function RoomCreate() {
     try {
       const adminId = localStorage.getItem("id");
       const payload = {
-        Name: values.Name,
-        Type: values.Type,                   // "standard" | "suite" | "family"
-        BedType: values.BedType,             // "single" | "double" | ...
-        Price: values.Price,                 // number
-        People: values.People,               // number
-        Status: values.Status,               // "open" | "closed"
-        AccommodationID: values.AccommodationID, // ✅ ผูกกับที่พัก
-        AdminID: adminId ? parseInt(adminId, 10) : undefined,
+        name: values.Name,
+        type: values.Type,
+        bed_type: values.BedType,
+        price: values.Price,
+        people: values.People,
+        status: values.Status,
+        accommodation_id: values.AccommodationID, 
+        AdminID: adminId ? parseInt(adminId, 10) : undefined, // ถ้า backend ไม่ใช้จะถูกเมิน
       };
 
       const res = await CreateRoom(payload);
       if (res?.status === 200 || res?.status === 201) {
         messageApi.success(res?.data?.message ?? "บันทึกสำเร็จ");
-        navigate("/room");
+        navigate("/accommodation/room"); // ✅ กลับไปหน้ารายการห้องที่เส้นทางถูกต้อง
       } else {
         messageApi.error(res?.data?.error ?? "บันทึกไม่สำเร็จ");
       }
@@ -116,11 +116,7 @@ function RoomCreate() {
             showIcon
             style={{ marginBottom: 16 }}
             message="ยังไม่มีข้อมูลที่พัก"
-            description={
-              <>
-                กรุณาไปที่เมนู “ที่พัก” เพื่อสร้างที่พักก่อน แล้วค่อยกลับมาสร้างห้อง
-              </>
-            }
+            description="กรุณาไปที่เมนู “ที่พัก” เพื่อสร้างที่พักก่อน แล้วค่อยกลับมาสร้างห้อง"
           />
         )}
 
@@ -146,9 +142,13 @@ function RoomCreate() {
                   showSearch
                   loading={loadingAcc}
                   optionFilterProp="label"
+                  optionLabelProp="label"
+                  filterOption={(input, option) =>
+                    (option?.label as string)?.toLowerCase().includes(input.toLowerCase())
+                  }
                   options={(accommodations ?? []).map((a) => ({
-                    value: Number(a.ID),
-                    label: a.Name || `ที่พัก #${a.ID}`,
+                    value: Number(a.ID),                                // ส่งค่าเป็น ID
+                    label: a.Name || a.name || `ที่พัก #${a.ID}`,       // ✅ แสดงชื่อเสมอ
                   }))}
                 />
               </Form.Item>
@@ -244,7 +244,7 @@ function RoomCreate() {
             <Col style={{ marginTop: 32 }}>
               <Form.Item>
                 <Space>
-                  <Link to="/room">
+                  <Link to="/accommodation/room">{/* ✅ ปรับเส้นทางให้ตรงกับ Router */}
                     <Button htmlType="button">ยกเลิก</Button>
                   </Link>
                   <Button type="primary" htmlType="submit" icon={<PlusOutlined />}>

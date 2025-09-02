@@ -6,5 +6,6 @@ export interface RoomInterface{
     People?:        number;
     Price?:         number;
     Status?:        string;
-    AccommodationID?:       number;  
+    AccommodationID?:       number;
+      
 }

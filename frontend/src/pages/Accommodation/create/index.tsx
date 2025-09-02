@@ -140,10 +140,10 @@ export default function AccommodationCreate() {
         Name: values.Name,
         Type: values.Type,
         Status: values.Status,
-        ProvinceID: values.ProvinceID,
-        DistrictID: values.DistrictID,
-        SubdistrictID: values.SubdistrictID,
-        AdminID: adminId ? parseInt(adminId, 10) : undefined,
+        province_id: values.ProvinceID,
+        district_id: values.DistrictID,
+        subdistrict_id: values.SubdistrictID,
+        admin_id: adminId ? parseInt(adminId, 10) : undefined,
       };
 
       const res = await CreateAccommodation(payload);

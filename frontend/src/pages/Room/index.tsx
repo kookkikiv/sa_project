@@ -1,5 +1,7 @@
-import React, { useState, useEffect } from "react";
+// src/pages/Room/index.tsx
+import { useState, useEffect } from "react";
 import {
+  Space,
   Table,
   Button,
   Col,
@@ -12,122 +14,91 @@ import { PlusOutlined, DeleteOutlined, EditOutlined } from "@ant-design/icons";
 import type { ColumnsType } from "antd/es/table";
 import { Link, useNavigate } from "react-router-dom";
 
-// Admin Interface
-interface RoomInterface {
-  ID?: number;
-  Name?: string;
-  Type?: string;
-  BedType?: string;
-  People?:  number;
-  Price?:   number;
-  Status?:  string;
-  AccommodationID?:  number;
-}
+import { GetRoom, DeleteRoomById } from "../../services/https";
+import { type RoomInterface } from "../../interface/Room";
 
-// API Functions
-const apiUrl = "http://localhost:8000";
+// ---------- helpers ----------
+type RowWithNames = RoomInterface & {
+  accommodationName?: string;
+};
 
-const getAuthHeaders = () => {
-  const token = localStorage.getItem("token");
-  const tokenType = localStorage.getItem("token_type");
+const asArray = <T,>(val: any): T[] =>
+  Array.isArray(val) ? (val as T[])
+  : Array.isArray(val?.data) ? (val.data as T[])
+  : Array.isArray(val?.items) ? (val.items as T[])
+  : [];
+
+// ดึงชื่อที่พักจากหลายคีย์ที่อาจส่งมา
+const getAccName = (r: any) =>
+  r?.Accommodation?.Name ??
+  r?.Accommodation?.name ??
+  r?.accommodation?.Name ??
+  r?.accommodation?.name ??
+  "";
+
+// ปรับคีย์ให้สม่ำเสมอ (กัน backend ส่งชื่อคีย์ไม่ตรง)
+const normalizeRoom = (r: any) => {
+  const Name    = r.Name    ?? r.name    ?? "";
+  const Type    = r.Type    ?? r.type    ?? "";
+  const BedType = r.BedType ?? r.bed_type ?? "";
+  const Status  = r.Status  ?? r.status  ?? "";
+  const People  = Number(r.People ?? r.people ?? 0);
+  const Price   = Number(r.Price  ?? r.price  ?? 0);
+
   return {
-    "Content-Type": "application/json",
-    ...(token && tokenType ? { Authorization: `${tokenType} ${token}` } : {}),
-  };
+    ...r,
+    Name, Type, BedType, Status, People, Price,
+    accommodationName: getAccName(r),
+  } as RowWithNames;
 };
 
-const fetchRooms = async () => {
-  try {
-    const response = await fetch(`${apiUrl}/room`, {
-      headers: getAuthHeaders(),
-    });
-    if (response.ok) {
-      const data = await response.json();
-      return { status: response.status, data: data.data || data };
-    }
-    return { status: response.status, data: null };
-  } catch (error) {
-    console.error("Fetch error:", error);
-    return { status: 500, data: null };
-  }
-};
-
-const deleteRoomById = async (id: string) => {
-  try {
-    const response = await fetch(`${apiUrl}/admin/${id}`, {
-      method: "DELETE",
-      headers: getAuthHeaders(),
-    });
-    const data = await response.json();
-    return { status: response.status, data };
-  } catch (error) {
-    console.error("Delete error:", error);
-    return { status: 500, data: { error: "Network error" } };
-  }
-};
-
-const Room: React.FC = () => {
+function Room() {
   const navigate = useNavigate();
-  const [rooms, setRooms] = useState<RoomInterface[]>([]);
+  const [rows, setRows] = useState<RowWithNames[]>([]);
   const [loading, setLoading] = useState<boolean>(false);
   const [messageApi, contextHolder] = message.useMessage();
 
   const myId = localStorage.getItem("id") ?? "";
 
-  const handleDelete = async (id: string | number) => {
+  const getRooms = async () => {
     try {
       setLoading(true);
-      const res = await deleteRoomById(String(id));
-      if (res.status === 200) {
-        messageApi.success(res.data?.message || "ลบข้อมูลสำเร็จ");
-        await loadRooms();
-      } else {
-        messageApi.error(res.data?.error || "ลบข้อมูลไม่สำเร็จ");
-      }
-    } catch (e) {
-      console.error("Delete error:", e);
-      messageApi.error("เกิดข้อผิดพลาดในการลบข้อมูล");
+      const res = await GetRoom();
+      if (res.status !== 200) throw new Error(res.data?.error ?? "ไม่สามารถดึงข้อมูลห้องพักได้");
+      const raw = asArray<RoomInterface>(res.data);
+      setRows(raw.map(normalizeRoom));
+    } catch (e: any) {
+      setRows([]);
+      messageApi.error(e?.message || "เกิดข้อผิดพลาดในการดึงข้อมูลห้องพัก");
     } finally {
       setLoading(false);
     }
   };
 
-  const loadRooms = async () => {
+  const deleteRoom = async (id: string | number) => {
     try {
-      setLoading(true);
-      const res = await fetchRooms();
-      
-      if (res.status === 200 && res.data) {
-        if (Array.isArray(res.data)) {
-          setRooms(res.data);
-        } else {
-          setRooms([]);
-          messageApi.error("รูปแบบข้อมูลไม่ถูกต้อง");
-        }
+      const res = await DeleteRoomById(String(id));
+      if (res.status === 200) {
+        messageApi.success(res.data?.message ?? "ลบข้อมูลสำเร็จ");
+        await getRooms();
       } else {
-        setRooms([]);
-        messageApi.error("ไม่สามารถดึงข้อมูลห้องพักได้");
+        messageApi.error(res.data?.error ?? "ลบข้อมูลไม่สำเร็จ");
       }
-    } catch (e) {
-      console.error("Load error:", e);
-      setRooms([]);
-      messageApi.error("เกิดข้อผิดพลาดในการดึงข้อมูลห้องพัก");
-    } finally {
-      setLoading(false);
+    } catch {
+      messageApi.error("เกิดข้อผิดพลาดในการลบข้อมูล");
     }
   };
 
   useEffect(() => {
-    loadRooms();
+    void getRooms();
   }, []);
 
-
-  const columns: ColumnsType<RoomInterface> = [
+  const columns: ColumnsType<RowWithNames> = [
     {
       title: "",
-      width: 50,
+      width: 72,
       render: (record) => {
-        const isMe = String(record.ID ?? "") === myId;
+        const isMe = String(record?.ID ?? "") === myId;
         if (isMe) return null;
         return (
           <Popconfirm
@@ -135,60 +106,29 @@ const Room: React.FC = () => {
             description="คุณต้องการลบรายการนี้หรือไม่"
             okText="ลบ"
             cancelText="ยกเลิก"
-            onConfirm={() => handleDelete(record.ID as number)}
+            onConfirm={() => deleteRoom(record.ID as any)}
           >
-            <Button 
-              type="text" 
-              danger 
-              icon={<DeleteOutlined />} 
-              size="small"
-            />
+            <Button type="dashed" danger icon={<DeleteOutlined />} />
           </Popconfirm>
         );
       },
     },
+    { title: "ID", dataIndex: "ID", key: "ID", width: 80 },
+    { title: "ชื่อ", dataIndex: "Name", key: "Name" },
+    { title: "ลักษณะห้อง", dataIndex: "Type", key: "Type", width: 160 },
+    { title: "ลักษณะเตียง", dataIndex: "BedType", key: "BedType", width: 160 },
+    { title: "จำนวนคน", dataIndex: "People", key: "People", width: 120 },
+    { title: "ราคา", dataIndex: "Price", key: "Price", width: 120 },
+    { title: "สถานะ", dataIndex: "Status", key: "Status", width: 120 },
+    { title: "ที่พัก", dataIndex: "accommodationName", key: "accommodationName", width: 220 },
     {
-      title: "ID",
-      dataIndex: "ID",
-      key: "ID",
-      width: 80,
-      sorter: (a, b) => (a.ID || 0) - (b.ID || 0),
-    },
-    {
-      title: "ชื่อ",
-      dataIndex: "Name",
-      key: "Name",
-      sorter: (a, b) => (a.Name || "").localeCompare(b.Name || ""),
-    },
-    {
-      title: "ลักษณะห้อง",
-      dataIndex: "Type",
-      key: "Type",
-      sorter: (a, b) => (a.Type || "").localeCompare(b.Type || ""),
-    },
-    {
-      title: "ลักษณะเตียง",
-      dataIndex: "BedType",
-      key: "BedType",
-      sorter: (a, b) => (a.BedType || "").localeCompare(b.BedType || ""),
-    },
-        {
-      title: "สถานะ",
-      dataIndex: "Status",
-      key: "Status",
-      sorter: (a, b) => (a.Status || "").localeCompare(b.Status || ""),
-    },
-
-    {
-      title: "การจัดการ",
-      key: "action",
-      width: 120,
+      title: "",
+      width: 140,
       render: (record) => (
         <Button
           type="primary"
-          size="small"
           icon={<EditOutlined />}
-          onClick={() => navigate(`/room/edit/${record.ID}`)}
+          onClick={() => navigate(`/accommodation/room/edit/${record.ID}`)}
         >
           แก้ไข
         </Button>
@@ -200,51 +140,35 @@ const Room: React.FC = () => {
     <>
       {contextHolder}
 
-      <Row gutter={[16, 16]} align="middle">
-        <Col flex="auto">
-          <h2 style={{ margin: 0, fontSize: '24px', fontWeight: 600 }}>
-            จัดการข้อมูลห้องพัก
-          </h2>
+      <Row gutter={[16, 16]}>
+        <Col span={12}>
+          <h2 style={{ margin: 0 }}>จัดการข้อมูลห้องพัก</h2>
         </Col>
-        <Col>
-          <Link to="/room/create">
-            <Button 
-              type="primary" 
-              icon={<PlusOutlined />}
-              size="large"
-            >
-              เพิ่มห้องพัก
-            </Button>
-          </Link>
+        <Col span={12} style={{ textAlign: "end", alignSelf: "center" }}>
+          <Space>
+            <Link to="/accommodation/room/create">
+              <Button type="primary" icon={<PlusOutlined />}>
+                เพิ่มห้องพัก
+              </Button>
+            </Link>
+          </Space>
         </Col>
       </Row>
 
-      <Divider style={{ margin: "16px 0" }} />
+      <Divider style={{ margin: "12px 0 16px" }} />
 
-      <div style={{ 
-        background: '#fff', 
-        padding: '24px', 
-        borderRadius: '8px',
-        boxShadow: '0 2px 8px rgba(0,0,0,0.1)'
-      }}>
-        <Table<RoomInterface>
-          rowKey={(record) => String(record.ID ?? Math.random())}
+      <div style={{ marginTop: 12 }}>
+        <Table<RowWithNames>
+          rowKey={(r) => String((r as any).ID ?? "")}
           loading={loading}
           columns={columns}
-          dataSource={rooms}
-          pagination={{
-            pageSize: 10,
-            showSizeChanger: true,
-            showQuickJumper: true,
-            showTotal: (total, range) => 
-              `${range[0]}-${range[1]} จาก ${total} รายการ`,
-          }}
-          scroll={{ x: 800 }}
-          size="middle"
+          dataSource={Array.isArray(rows) ? rows : []}
+          style={{ width: "100%", overflow: "auto" }}
+          pagination={{ pageSize: 10, showSizeChanger: false }}
         />
       </div>
     </>
   );
-};
+}
 
 export default Room;

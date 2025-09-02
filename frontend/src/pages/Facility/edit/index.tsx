@@ -14,7 +14,7 @@ import {
 } from "antd";
 import { SaveOutlined, ArrowLeftOutlined } from "@ant-design/icons";
 import { useNavigate, Link, useParams } from "react-router-dom";
-import type { FacilityInterface } from "../../../interface/Facility";
+
 
 // API Functions
 const apiUrl = "http://localhost:8000";
@@ -266,8 +266,8 @@ const FacilityEdit: React.FC = () => {
       const payload = {
         Name: displayName, // ใช้ชื่อที่แสดงแทน value
         Type: values.Type,
-        AccommodationID: values.Type === "accommodation" ? values.AccommodationID : null,
-        RoomID: values.Type === "room" ? values.RoomID : null,
+        accommodation_id: values.Type === "accommodation" ? values.AccommodationID : null,
+        room_id: values.Type === "room" ? values.RoomID : null,
       };
 
       // Validate required fields
@@ -277,12 +277,12 @@ const FacilityEdit: React.FC = () => {
       }
 
       // Validate based on type
-      if (payload.Type === "accommodation" && !payload.AccommodationID) {
+      if (payload.Type === "accommodation" && !payload.accommodation_id) {
         messageApi.error("กรุณาเลือกที่พัก");
         return;
       }
 
-      if (payload.Type === "room" && !payload.RoomID) {
+      if (payload.Type === "room" && !payload.room_id) {
         messageApi.error("กรุณาเลือกห้องพัก");
         return;
       }

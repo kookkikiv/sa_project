@@ -1,24 +1,9 @@
-// src/pages/Accommodation/edit/index.tsx
-import { useState, useEffect } from "react";
+import { useEffect, useState } from "react";
 import {
-  Space,
-  Button,
-  Col,
-  Row,
-  Divider,
-  Form,
-  Input,
-  Card,
-  message,
-  Select,
+  Form, Input, Select, Button, Card, Row, Col, Divider, Space, message,
 } from "antd";
 import { PlusOutlined } from "@ant-design/icons";
-import { useNavigate, Link, useParams } from "react-router-dom";
-
-import { type AccommodationInterface } from "../../../interface/Accommodation";
-import { type ProvinceInterface } from "../../../interface/Province";
-import { type DistrictInterface } from "../../../interface/District";
-import { type SubdistrictInterface } from "../../../interface/Subdistrict";
+import { Link, useNavigate, useParams } from "react-router-dom";
 
 import {
   GetProvince,
@@ -28,333 +13,276 @@ import {
   UpdateAccommodationById,
 } from "../../../services/https";
 
-// ---------------- helpers: แปลงเป็น options + ดึง label ----------------
-const provinceOptions = (items: ProvinceInterface[]) =>
-  (items ?? []).map((p) => ({
-    value: String(p.ID),
-    label:
-      (p as any).provinceNameTh ||
-      (p as any).provinceNameEn ||
-      (p as any).NameTh ||
-      (p as any).NameEn ||
-      String(p.ID),
-  }));
+// ----- helpers -----
+const asArray = <T,>(v: any): T[] =>
+  Array.isArray(v) ? v as T[] :
+  Array.isArray(v?.data) ? v.data as T[] :
+  Array.isArray(v?.items) ? v.items as T[] : [];
 
-const districtOptions = (items: DistrictInterface[]) =>
-  (items ?? []).map((d) => ({
-    value: String(d.ID),
-    label:
-      (d as any).districtNameTh ||
-      (d as any).districtNameEn ||
-      (d as any).NameTh ||
-      (d as any).NameEn ||
-      String(d.ID),
-  }));
-
-const subdistrictOptions = (items: SubdistrictInterface[]) =>
-  (items ?? []).map((s) => ({
-    value: String(s.ID),
-    label:
-      (s as any).subdistrictNameTh ||
-      (s as any).subdistrictNameEn ||
-      (s as any).NameTh ||
-      (s as any).NameEn ||
-      String(s.ID),
-  }));
-
-// ป้องกันกรณี API ห่อ data/items
-const asArray = <T,>(val: any): T[] =>
-  Array.isArray(val) ? (val as T[]) :
-  Array.isArray(val?.data) ? (val.data as T[]) :
-  Array.isArray(val?.items) ? (val.items as T[]) :
-  [];
+const labelProvince = (p: any) =>
+  p?.provinceNameTh || p?.provinceNameEn || p?.NameTh || p?.NameEn || p?.name || String(p?.ID ?? "");
+const labelDistrict = (d: any) =>
+  d?.districtNameTh || d?.districtNameEn || d?.NameTh || d?.NameEn || d?.name || String(d?.ID ?? "");
+const labelSubdistrict = (s: any) =>
+  s?.subdistrictNameTh || s?.subdistrictNameEn || s?.NameTh || s?.NameEn || s?.name || String(s?.ID ?? "");
 
 export default function AccommodationEdit() {
-  const navigate = useNavigate();
   const { id } = useParams<{ id: string }>();
+  const navigate = useNavigate();
   const [form] = Form.useForm();
-  const [messageApi, contextHolder] = message.useMessage();
+  const [msg, ctx] = message.useMessage();
 
-  const [provinces, setProvinces] = useState<ProvinceInterface[]>([]);
-  const [districts, setDistricts] = useState<DistrictInterface[]>([]);
-  const [subdistricts, setSubdistricts] = useState<SubdistrictInterface[]>([]);
-
-  const [selectedProvinceStr, setSelectedProvinceStr] = useState<string | null>(null);
-  const [selectedDistrictStr, setSelectedDistrictStr] = useState<string | null>(null);
+  const [provinces, setProvinces] = useState<any[]>([]);
+  const [districts, setDistricts] = useState<any[]>([]);
+  const [subdistricts, setSubdistricts] = useState<any[]>([]);
 
   const [loadingProvince, setLoadingProvince] = useState(false);
   const [loadingDistrict, setLoadingDistrict] = useState(false);
   const [loadingSubdistrict, setLoadingSubdistrict] = useState(false);
   const [saving, setSaving] = useState(false);
 
-  // ---------------- Fetchers ----------------
-  const onGetProvince = async () => {
+  // ดูค่าที่เลือกจากฟอร์ม (ไม่ต้องทำ state แยก)
+  const provinceId: number | undefined = Form.useWatch("province_id", form);
+  const districtId: number | undefined = Form.useWatch("district_id", form);
+
+  // ----- loaders -----
+  const loadProvinces = async () => {
     setLoadingProvince(true);
     try {
       const res = await GetProvince();
-      if (res?.status === 200) setProvinces(asArray<ProvinceInterface>(res.data));
-      else throw new Error();
+      setProvinces(asArray(res?.data));
     } catch {
       setProvinces([]);
-      messageApi.error("ไม่พบข้อมูลจังหวัด");
-      setTimeout(() => navigate("/accommodation"), 1500);
+      msg.error("โหลดจังหวัดไม่สำเร็จ");
     } finally {
       setLoadingProvince(false);
     }
   };
 
-  const onGetDistrict = async (provinceId: number) => {
+  const loadDistricts = async (pid: number) => {
     setLoadingDistrict(true);
     try {
-      const res = await GetDistrict(provinceId);
-      if (res?.status === 200) setDistricts(asArray<DistrictInterface>(res.data));
-      else throw new Error();
+      const res = await GetDistrict(pid);
+      setDistricts(asArray(res?.data));
     } catch {
       setDistricts([]);
-      messageApi.error("ไม่พบข้อมูลอำเภอ");
+      msg.error("โหลดอำเภอไม่สำเร็จ");
     } finally {
       setLoadingDistrict(false);
     }
   };
 
-  const onGetSubdistrict = async (districtId: number) => {
+  const loadSubdistricts = async (did: number) => {
     setLoadingSubdistrict(true);
     try {
-      const res = await GetSubdistrict(districtId);
-      if (res?.status === 200) setSubdistricts(asArray<SubdistrictInterface>(res.data));
-      else throw new Error();
+      const res = await GetSubdistrict(did);
+      setSubdistricts(asArray(res?.data));
     } catch {
       setSubdistricts([]);
-      messageApi.error("ไม่พบข้อมูลตำบล");
+      msg.error("โหลดตำบลไม่สำเร็จ");
     } finally {
       setLoadingSubdistrict(false);
     }
   };
 
-  const getAccommodationById = async (accId: string) => {
-    const res = await GetAccommodationById(accId);
-    if (res?.status !== 200) throw new Error("ไม่พบข้อมูลที่พัก");
-
-    const data = res.data;
-    // แปลงเป็น string ให้ตรงกับ Select.value
-    const pidStr = data.ProvinceID != null ? String(data.ProvinceID) : undefined;
-    const didStr = data.DistrictID != null ? String(data.DistrictID) : undefined;
-    const sidStr = data.SubdistrictID != null ? String(data.SubdistrictID) : undefined;
-
-    return {
-      Name: data.Name,
-      Type: data.Type,
-      Status: data.Status,
-      ProvinceID: pidStr,
-      DistrictID: didStr,
-      SubdistrictID: sidStr,
-    } as {
-      Name?: string;
-      Type?: string;
-      Status?: string;
-      ProvinceID?: string;
-      DistrictID?: string;
-      SubdistrictID?: string;
-    };
-  };
-
-  // ---------------- Init: โหลดตามลำดับ ----------------
+  // แรกเข้า: โหลดจังหวัด แล้วดึงข้อมูลที่พักมาใส่ฟอร์ม
   useEffect(() => {
     (async () => {
       try {
-        await onGetProvince();                 // 1) provinces พร้อมก่อน
-        const init = await getAccommodationById(id!); // 2) ดึงข้อมูลเดิม
+        await loadProvinces();
 
-        // 3) โหลด districts/subdistricts ตามค่าเดิม
-        if (init.ProvinceID) {
-          setSelectedProvinceStr(init.ProvinceID);
-          await onGetDistrict(Number(init.ProvinceID));
-        }
-        if (init.DistrictID) {
-          setSelectedDistrictStr(init.DistrictID);
-          await onGetSubdistrict(Number(init.DistrictID));
-        }
+        const res = await GetAccommodationById(String(id));
+        if (res?.status !== 200) throw new Error("ไม่พบข้อมูลที่พัก");
 
-        // 4) set ค่าฟอร์มหลัง options พร้อมแล้ว → AntD หา label เจอ
-        form.setFieldsValue(init);
+        // backend ส่งเป็น snake_case ตรงกับ json tag
+        const data = res.data;
+
+        // ใส่ค่าเริ่มต้น (ใช้เลขตรงๆ ไม่ต้องแปลง string)
+        form.setFieldsValue({
+          name: data.name ?? data.Name,
+          type: data.type ?? data.Type,
+          status: data.status ?? data.Status,
+          province_id: data.province_id ?? data.ProvinceID,
+          district_id: data.district_id ?? data.DistrictID,
+          subdistrict_id: data.subdistrict_id ?? data.SubdistrictID,
+        });
+
+        if (data.province_id ?? data.ProvinceID) {
+          await loadDistricts(Number(data.province_id ?? data.ProvinceID));
+        }
+        if (data.district_id ?? data.DistrictID) {
+          await loadSubdistricts(Number(data.district_id ?? data.DistrictID));
+        }
       } catch (e: any) {
-        messageApi.error(e?.message || "โหลดข้อมูลไม่สำเร็จ");
-        setTimeout(() => navigate("/accommodation"), 1500);
+        msg.error(e?.message || "เกิดข้อผิดพลาด");
+        setTimeout(() => navigate("/accommodation"), 1200);
       }
     })();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [id]);
 
-  // ---------------- Submit ----------------
-  const onFinish = async (values: AccommodationInterface & {
-    ProvinceID?: string; DistrictID?: string; SubdistrictID?: string;
+  // เมื่อเลือกจังหวัด → โหลดอำเภอใหม่ และล้างค่าอำเภอ/ตำบล
+  useEffect(() => {
+    (async () => {
+      if (typeof provinceId === "number") {
+        form.setFieldsValue({ district_id: undefined, subdistrict_id: undefined });
+        setSubdistricts([]);
+        await loadDistricts(provinceId);
+      }
+    })();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [provinceId]);
+
+  // เมื่อเลือกอำเภอ → โหลดตำบลใหม่ และล้างค่าตำบล
+  useEffect(() => {
+    (async () => {
+      if (typeof districtId === "number") {
+        form.setFieldsValue({ subdistrict_id: undefined });
+        await loadSubdistricts(districtId);
+      }
+    })();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [districtId]);
+
+  // ----- submit -----
+  const onFinish = async (values: {
+    name?: string; type?: string; status?: string;
+    province_id?: number; district_id?: number; subdistrict_id?: number;
   }) => {
     try {
       setSaving(true);
       const adminId = localStorage.getItem("id");
 
+      // ส่งเป็น snake_case ให้ตรงกับฝั่ง Go
       const payload = {
-        Name: values.Name,
-        Type: values.Type,
-        Status: values.Status,
-        ProvinceID: values.ProvinceID ? Number(values.ProvinceID) : undefined,
-        DistrictID: values.DistrictID ? Number(values.DistrictID) : undefined,
-        SubdistrictID: values.SubdistrictID ? Number(values.SubdistrictID) : undefined,
-        AdminID: adminId ? parseInt(adminId, 10) : undefined,
+        name: values.name,
+        type: values.type,
+        status: values.status,
+        province_id: values.province_id,
+        district_id: values.district_id,
+        subdistrict_id: values.subdistrict_id,
+        admin_id: adminId ? Number(adminId) : undefined,
       };
 
-      const res = await UpdateAccommodationById(id!, payload);
+      const res = await UpdateAccommodationById(String(id),payload);
       if (res?.status === 200) {
-        messageApi.success(res?.data?.message ?? "บันทึกสำเร็จ");
-        setTimeout(() => navigate("/accommodation"), 1000);
+        msg.success(res?.data?.message ?? "บันทึกสำเร็จ");
+        setTimeout(() => navigate("/accommodation"), 800);
       } else {
         throw new Error(res?.data?.error ?? "บันทึกไม่สำเร็จ");
       }
     } catch (e: any) {
-      messageApi.error(e?.message || "เกิดข้อผิดพลาดในการบันทึกข้อมูล");
+      msg.error(e?.message || "เกิดข้อผิดพลาดในการบันทึก");
     } finally {
       setSaving(false);
     }
   };
 
-  // ---------------- UI ----------------
   return (
     <div>
-      {contextHolder}
+      {ctx}
       <Card>
-        <h2>แก้ไขข้อมูล ที่พัก</h2>
+        <h2>แก้ไขข้อมูลที่พัก</h2>
         <Divider />
 
-        <Form
-          form={form}
-          layout="vertical"
-          onFinish={onFinish}
-          autoComplete="off"
-        >
+        <Form form={form} layout="vertical" onFinish={onFinish} autoComplete="off">
           <Row gutter={[16, 0]}>
-            {/* ชื่อที่พัก */}
             <Col xs={24} md={12}>
               <Form.Item
                 label="ชื่อที่พัก"
-                name="Name"
+                name="name"
                 rules={[{ required: true, message: "กรุณากรอกชื่อที่พัก !" }]}
               >
                 <Input placeholder="เช่น โรงแรม ABC" />
               </Form.Item>
             </Col>
 
-            {/* ลักษณะที่พัก */}
             <Col xs={24} md={12}>
               <Form.Item
                 label="ลักษณะที่พัก"
-                name="Type"
+                name="type"
                 rules={[{ required: true, message: "กรุณาเลือกลักษณะที่พัก !" }]}
               >
                 <Select
                   placeholder="เลือกประเภทที่พัก"
-                  allowClear
-                  showSearch
-                  optionFilterProp="label"
                   options={[
-                    { value: "hotel",  label: "โรงแรม" },
+                    { value: "hotel", label: "โรงแรม" },
                     { value: "resort", label: "รีสอร์ท" },
                     { value: "hostel", label: "โฮสเทล" },
                   ]}
+                  showSearch
+                  optionFilterProp="label"
                 />
               </Form.Item>
             </Col>
 
-            {/* สถานะที่พัก */}
             <Col xs={24} md={12}>
               <Form.Item
                 label="สถานะที่พัก"
-                name="Status"
+                name="status"
                 rules={[{ required: true, message: "กรุณาเลือกสถานะที่พัก !" }]}
               >
                 <Select
-                  placeholder="เลือกสถานะที่พัก"
-                  allowClear
-                  showSearch
-                  optionFilterProp="label"
+                  placeholder="เลือกสถานะ"
                   options={[
-                    { value: "open",   label: "เปิดใช้บริการ" },
+                    { value: "open", label: "เปิดให้บริการ" },
                     { value: "closed", label: "ปิดปรับปรุง" },
                   ]}
+                  showSearch
+                  optionFilterProp="label"
                 />
               </Form.Item>
             </Col>
 
-            {/* จังหวัด */}
             <Col xs={24} md={12}>
               <Form.Item
                 label="จังหวัด"
-                name="ProvinceID"
+                name="province_id"
                 rules={[{ required: true, message: "กรุณาเลือกจังหวัด !" }]}
               >
                 <Select
                   placeholder="เลือกจังหวัด"
-                  allowClear
-                  showSearch
                   loading={loadingProvince}
-                  options={provinceOptions(provinces)}
+                  options={provinces.map((p) => ({ value: p.ID, label: labelProvince(p) }))}
+                  showSearch
                   optionFilterProp="label"
-                  value={selectedProvinceStr ?? undefined}
-                  onChange={async (value?: string) => {
-                    const v = value ?? null;
-                    setSelectedProvinceStr(v);
-                    setSelectedDistrictStr(null);
-                    setSubdistricts([]);
-                    // เคลียร์ค่าในฟอร์มลูก
-                    form.setFieldsValue({ DistrictID: undefined, SubdistrictID: undefined });
-                    if (v) await onGetDistrict(Number(v));
-                    else setDistricts([]);
-                  }}
+                  allowClear
                 />
               </Form.Item>
             </Col>
 
-            {/* อำเภอ */}
             <Col xs={24} md={12}>
               <Form.Item
                 label="อำเภอ"
-                name="DistrictID"
+                name="district_id"
                 rules={[{ required: true, message: "กรุณาเลือกอำเภอ !" }]}
               >
                 <Select
                   placeholder="เลือกอำเภอ"
-                  allowClear
-                  disabled={!selectedProvinceStr}
-                  showSearch
                   loading={loadingDistrict}
-                  options={districtOptions(districts)}
+                  disabled={!provinceId}
+                  options={districts.map((d) => ({ value: d.ID, label: labelDistrict(d) }))}
+                  showSearch
                   optionFilterProp="label"
-                  value={selectedDistrictStr ?? undefined}
-                  onChange={async (value?: string) => {
-                    const v = value ?? null;
-                    setSelectedDistrictStr(v);
-                    form.setFieldsValue({ SubdistrictID: undefined });
-                    if (v) await onGetSubdistrict(Number(v));
-                    else setSubdistricts([]);
-                  }}
+                  allowClear
                 />
               </Form.Item>
             </Col>
 
-            {/* ตำบล */}
             <Col xs={24} md={12}>
               <Form.Item
                 label="ตำบล"
-                name="SubdistrictID"
+                name="subdistrict_id"
                 rules={[{ required: true, message: "กรุณาเลือกตำบล !" }]}
               >
                 <Select
                   placeholder="เลือกตำบล"
-                  allowClear
-                  disabled={!selectedDistrictStr}
-                  showSearch
                   loading={loadingSubdistrict}
-                  options={subdistrictOptions(subdistricts)}
+                  disabled={!districtId}
+                  options={subdistricts.map((s) => ({ value: s.ID, label: labelSubdistrict(s) }))}
+                  showSearch
                   optionFilterProp="label"
+                  allowClear
                 />
               </Form.Item>
             </Col>
@@ -367,12 +295,7 @@ export default function AccommodationEdit() {
                   <Link to="/accommodation">
                     <Button htmlType="button">ยกเลิก</Button>
                   </Link>
-                  <Button
-                    type="primary"
-                    htmlType="submit"
-                    icon={<PlusOutlined />}
-                    loading={saving}
-                  >
+                  <Button type="primary" htmlType="submit" icon={<PlusOutlined />} loading={saving}>
                     บันทึก
                   </Button>
                 </Space>
