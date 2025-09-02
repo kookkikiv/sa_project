@@ -1,6 +1,6 @@
-export interface ProvinceInterface{
-    ID?:            number;
-    ProvinceCode?:  string;
-    NameTh?:        string;
-    NameEn?:        string;
+export interface ProvinceInterface {
+  ID: number;
+  provinceCode?: string;
+  provinceNameTh?: string;   
+  provinceNameEn?: string;   
 }

@@ -1,9 +1,9 @@
 export interface SubdistrictInterface{
     ID?:                number;
     SubdistrictCode?:   string;
-    NameTh?:            string;
-    NameEn?:            string;
-    DistrictID?:        number;
-    ZipCode?:           string;
+    subdistrictNameTh?:            string;
+    subdistrictNameEn?:            string;
+    districtID?:        number;
+    postalCode?:           string;
  
 }

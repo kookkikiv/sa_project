@@ -17,20 +17,21 @@ const EditPackage = Loadable(lazy(() => import("../pages/Package/edit")));
 const Room = Loadable(lazy(() => import("../pages/Room")));
 const CreateRoom = Loadable(lazy(() => import("../pages/Room/create")));
 const EditRoom = Loadable(lazy(() => import("../pages/Room/edit")));
-const Facility = Loadable(lazy(() => import("../pages/Room")));
-const CreateFacility = Loadable(lazy(() => import("../pages/Room/create")));
-const EditFacility = Loadable(lazy(() => import("../pages/Room/edit")));
+const Facility = Loadable(lazy(() => import("../pages/Facility")));
+const CreateFacility = Loadable(lazy(() => import("../pages/Facility/create")));
+const EditFacility = Loadable(lazy(() => import("../pages/Facility/edit")));
 
 const AdminRoutes = (isLoggedIn: boolean): RouteObject => {
   return {
-    path: "/*", // Fixed: Added /* to prevent routing issues
+    path: "*", // แก้ไขจาก "/" เป็น "*"
     element: isLoggedIn ? <FullLayout /> : <MainPages />,
-    children: [
-      // default page for "/"
+    children: isLoggedIn ? [
+      // Default dashboard route
       { index: true, element: <Dashboard /> },
 
+      // Admin routes
       {
-        path: "admin/*", // Fixed: Added /*
+        path: "admin",
         children: [
           { index: true, element: <Admin /> },              
           { path: "create", element: <CreateAdmin /> },     
@@ -38,40 +39,49 @@ const AdminRoutes = (isLoggedIn: boolean): RouteObject => {
         ],
       },
 
+      // Accommodation routes
       {
-        path: "accommodation/*", // Fixed: Added /*
+        path: "accommodation",
         children: [
           { index: true, element: <Accommodation /> },          
           { path: "create", element: <CreateAccommodation /> }, 
-          { path: "edit/:id", element: <EditAccommodation /> }, 
+          { path: "edit/:id", element: <EditAccommodation /> },
+          
+          // Room sub-routes under accommodation
+          {
+            path: "room",
+            children: [
+              { index: true, element: <Room /> },
+              { path: "create", element: <CreateRoom /> },
+              { path: "edit/:id", element: <EditRoom /> },
+            ],
+          },
+          
+          // Facility sub-routes under accommodation  
+          {
+            path: "facility",
+            children: [
+              { index: true, element: <Facility /> },
+              { path: "create", element: <CreateFacility /> },
+              { path: "edit/:id", element: <EditFacility /> },
+            ],
+          },
         ],
       },
 
+      // Package routes
       {
-        path: "package/*", // Added package routes
+        path: "package",
         children: [
           { index: true, element: <Package /> },          
           { path: "create", element: <CreatePackage /> }, 
           { path: "edit/:id", element: <EditPackage /> }, 
         ],
       },
-      {
-        path: "room/*", // Fixed: Added /*
-        children: [
-          { index: true, element: <Room /> },          
-          { path: "create", element: <CreateRoom /> }, 
-          { path: "edit/:id", element: <EditRoom /> }, 
-        ],
-      },
-            {
-        path: "facility/*", // Fixed: Added /*
-        children: [
-          { index: true, element: <Facility /> },          
-          { path: "create", element: <CreateFacility /> }, 
-          { path: "edit/:id", element: <EditFacility /> }, 
-        ],
-      },
-    ],
+
+      // Catch-all route - ส่งกลับไปหน้า dashboard
+      { path: "*", element: <Dashboard /> },
+    ] : [],
   };
 };
 

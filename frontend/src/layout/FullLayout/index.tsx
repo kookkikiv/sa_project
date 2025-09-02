@@ -7,7 +7,6 @@ import {
   DashboardOutlined,
   HomeOutlined,
   GlobalOutlined,
-  ToolOutlined,
 } from "@ant-design/icons";
 import { Breadcrumb, Layout, Menu, theme, Button, message } from "antd";
 import logo from "../../assets/logo.png";
@@ -27,8 +26,6 @@ import FacilityEdit from "../../pages/Facility/edit";
 import Package from "../../pages/Package";
 import PackageCreate from "../../pages/Package/create";
 import PackageEdit from "../../pages/Package/edit";
-
-
 
 const { Header, Content, Footer, Sider } = Layout;
 
@@ -52,18 +49,19 @@ const FullLayout: React.FC = () => {
     localStorage.clear();
     messageApi.success("Logout successful");
     setTimeout(() => {
-      navigate("/"); // <-- แทน location.href = "/"
+      navigate("/");
     }, 1200);
   };
 
   const selectedKey = useMemo<string>(() => {
-    if (path.startsWith("/accommodation/rooms")) return "accommodation/rooms";
+    if (path.startsWith("/accommodation/room")) return "accommodation/room";
     if (path.startsWith("/accommodation/facility")) return "accommodation/facility";
     if (path.startsWith("/accommodation")) return "accommodation/list";
     if (path.startsWith("/admin")) return "admin";
     if (path.startsWith("/package")) return "package";
     return "dashboard";
   }, [path]);
+
   const [openKeys, setOpenKeys] = useState<string[]>(
     path.startsWith("/accommodation") ? ["accommodation"] : []
   );
@@ -104,7 +102,7 @@ const FullLayout: React.FC = () => {
         },
         {
           key: "accommodation/facility",
-          icon: <ToolOutlined />,
+          icon: <HomeOutlined />,
           label: <Link to="/accommodation/facility">สิ่งอำนวยความสะดวก</Link>,
           onClick: () => setCurrentPage("accommodation-facility"),
         },
@@ -178,15 +176,23 @@ const FullLayout: React.FC = () => {
               <Route path="/admin" element={<Admin />} />
               <Route path="/admin/create" element={<AdminCreate />} />
               <Route path="/admin/edit/:id" element={<AdminEdit />} />
+              
+              {/* Accommodation Routes */}
               <Route path="/accommodation" element={<Accommodation />} />
               <Route path="/accommodation/create" element={<AccommodationCreate />} />
               <Route path="/accommodation/edit/:id" element={<AccommodationEdit />} />
+              
+              {/* Room Routes - ใช้ path ที่ถูกต้อง */}
               <Route path="/accommodation/room" element={<Room />} />
               <Route path="/accommodation/room/create" element={<RoomCreate />} />
               <Route path="/accommodation/room/edit/:id" element={<RoomEdit />} />
+              
+              {/* Facility Routes - ใช้ path ที่ถูกต้อง */}
               <Route path="/accommodation/facility" element={<Facility />} />
               <Route path="/accommodation/facility/create" element={<FacilityCreate />} />
               <Route path="/accommodation/facility/edit/:id" element={<FacilityEdit />} />
+              
+              {/* Package Routes */}
               <Route path="/package" element={<Package />} />
               <Route path="/package/create" element={<PackageCreate />} />
               <Route path="/package/edit/:id" element={<PackageEdit />} />

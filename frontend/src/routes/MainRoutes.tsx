@@ -1,14 +1,12 @@
 import { lazy } from "react";
-import React from "react";
 import { type RouteObject } from "react-router-dom";
 import MinimalLayout from "../layout/MinimalLayout";
 import Loadable from "../components/third-patry/Loadable";
 
 const MainPages = Loadable(lazy(() => import("../pages/authentication/Login")));
-const Registerages = Loadable(
+const RegisterPages = Loadable(
   lazy(() => import("../pages/authentication/Register"))
 );
-
 
 const MainRoutes = (): RouteObject => {
   return {
@@ -16,16 +14,12 @@ const MainRoutes = (): RouteObject => {
     element: <MinimalLayout />,
     children: [
       {
-        path: "/",
+        index: true, // ใช้ index แทน path: "/"
         element: <MainPages />,
       },
       {
-        path: "/signup",
-        element: <Registerages />,
-      },
-      {
-        path: "*",
-        element: <MainPages />,
+        path: "signup",
+        element: <RegisterPages />,
       },
     ],
   };

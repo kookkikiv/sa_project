@@ -191,3 +191,4 @@ func CORSMiddleware() gin.HandlerFunc {
 		c.Next()
 	}
 }
+//curl.exe -sS -X POST "http://127.0.0.1:8000/api/v1/thailand/import-all"

@@ -10,9 +10,10 @@ type Package struct {
 	gorm.Model
 
 	Name  string    `json:"name"`
-	Date time.Time `json:"date"`
+	People	uint	`json:"people"`
+	StartDate time.Time `json:"start_date"`
+	FinalDate time.Time `json:"final_date"`
 	Price uint  `json:"price"`
-	Type string    `json:"type"`
 	GuideID *uint    `json:"guide_id"`
 	Guide   Guide `gorm:"foreignKey:GuideID"`
 	ProvinceID *uint    `json:"province_id"`

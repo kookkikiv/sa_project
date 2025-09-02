@@ -1,269 +1,175 @@
-import React, { useState, useEffect } from "react";
-import {
-  Space,
-  Table,
-  Button,
-  Col,
-  Row,
-  Divider,
-  message,
-  Popconfirm,
-} from "antd";
-import { PlusOutlined, DeleteOutlined, EditOutlined } from "@ant-design/icons";
+import { useState, useEffect } from "react";
+import { Space, Table, Button, Col, Row, Divider, message } from "antd";
+import { PlusOutlined, DeleteOutlined } from "@ant-design/icons";
 import type { ColumnsType } from "antd/es/table";
+import { GetAdmin, DeleteAdminById } from "../../services/https/index";
+import { type AdminInterface } from "../../interface/IAdmin";
 import { Link, useNavigate } from "react-router-dom";
 
-// Admin Interface
-interface AdminInterface {
-  ID?: number;
-  Firstname?: string;
-  Lastname?: string;
-  Email?: string;
-  Birthday?: string;
-}
-
-// API Functions
-const apiUrl = "http://localhost:8000";
-
-const getAuthHeaders = () => {
-  const token = localStorage.getItem("token");
-  const tokenType = localStorage.getItem("token_type");
-  return {
-    "Content-Type": "application/json",
-    ...(token && tokenType ? { Authorization: `${tokenType} ${token}` } : {}),
-  };
-};
-
-const fetchAdmins = async () => {
-  try {
-    const response = await fetch(`${apiUrl}/admin`, {
-      headers: getAuthHeaders(),
-    });
-    if (response.ok) {
-      const data = await response.json();
-      return { status: response.status, data: data.data || data };
-    }
-    return { status: response.status, data: null };
-  } catch (error) {
-    console.error("Fetch error:", error);
-    return { status: 500, data: null };
-  }
-};
-
-const deleteAdminById = async (id: string) => {
-  try {
-    const response = await fetch(`${apiUrl}/admin/${id}`, {
-      method: "DELETE",
-      headers: getAuthHeaders(),
-    });
-    const data = await response.json();
-    return { status: response.status, data };
-  } catch (error) {
-    console.error("Delete error:", error);
-    return { status: 500, data: { error: "Network error" } };
-  }
-};
-
-const Admin: React.FC = () => {
+function Admin() {
   const navigate = useNavigate();
-  const [admins, setAdmins] = useState<AdminInterface[]>([]);
-  const [loading, setLoading] = useState<boolean>(false);
+  const [users, setUsers] = useState<AdminInterface[]>([]);
+  const [loading, setLoading] = useState(false);
   const [messageApi, contextHolder] = message.useMessage();
+  const myId = localStorage.getItem("id");
 
-  const myId = localStorage.getItem("id") ?? "";
+  const columns: ColumnsType<AdminInterface> = [
+    {
+      title: "",
+      render: (record) => (
+        <>
+          {myId == record?.ID ? (
+            <></>
+          ) : (
+            <Button
+              type="dashed"
+              danger
+              icon={<DeleteOutlined />}
+              onClick={() => deleteAdminById(record.ID)}
+            ></Button>
+          )}
+        </>
+      ),
+    },
+    {
+      title: "ลำดับ",
+      dataIndex: "ID",
+      key: "id",
+    },
+    {
+      title: "ชื่อ",
+      dataIndex: "Firstname",
+      key: "Firstname",
+    },
+    {
+      title: "นามสกุุล",
+      dataIndex: "Lastname",
+      key: "Lastname",
+    },
+    {
+      title: "อีเมล",
+      dataIndex: "Email",
+      key: "Email",
+    },
+    {
+      title: "",
+      render: (record) => (
+        <>
+          <Button
+            type="primary"
+            onClick={() => navigate(`/admin/edit/${record.ID}`)}
+          >
+            แก้ไขข้อมูล
+          </Button>
+        </>
+      ),
+    },
+  ];
 
-  const handleDelete = async (id: string | number) => {
-    try {
-      setLoading(true);
-      const res = await deleteAdminById(String(id));
-      if (res.status === 200) {
-        messageApi.success(res.data?.message || "ลบข้อมูลสำเร็จ");
-        await loadAdmins();
-      } else {
-        messageApi.error(res.data?.error || "ลบข้อมูลไม่สำเร็จ");
-      }
-    } catch (e) {
-      console.error("Delete error:", e);
-      messageApi.error("เกิดข้อผิดพลาดในการลบข้อมูล");
-    } finally {
-      setLoading(false);
+  const deleteAdminById = async (id: string) => {
+    let res = await DeleteAdminById(id);
+    
+    if (res.status == 200) {
+      messageApi.open({
+        type: "success",
+        content: res.data.message,
+      });
+      await getAdmin();
+    } else {
+      messageApi.open({
+        type: "error",
+        content: res.data.error,
+      });
     }
   };
 
-  const loadAdmins = async () => {
+  const getAdmin = async () => {
     try {
       setLoading(true);
-      const res = await fetchAdmins();
+      let res = await GetAdmin();
+      console.log("Full response:", res);
+      console.log("Response data:", res.data);
       
-      if (res.status === 200 && res.data) {
-        if (Array.isArray(res.data)) {
-          setAdmins(res.data);
+      if (res.status == 200) {
+        // แก้ไขการ extract data
+        let adminData = res.data;
+        
+        // ถ้า response มีรูปแบบ { data: [...] }
+        if (res.data && res.data.data) {
+          adminData = res.data.data;
+        }
+        
+        // ตรวจสอบว่าเป็น array หรือไม่
+        if (Array.isArray(adminData)) {
+          // Map field names เพื่อให้ตรงกัน
+          const mappedUsers = adminData.map((user: any) => ({
+            ID: user.ID || user.id,
+            Firstname: user.Firstname || user.firstname || user.first_name || "",
+            Lastname: user.Lastname || user.lastname || user.last_name || "", 
+            Email: user.Email || user.email || "",
+            Birthday: user.Birthday || user.birthday || "",
+          }));
+          
+          console.log("Mapped users:", mappedUsers);
+          setUsers(mappedUsers);
         } else {
-          setAdmins([]);
-          messageApi.error("รูปแบบข้อมูลไม่ถูกต้อง");
+          console.log("Data is not array:", adminData);
+          setUsers([]);
         }
       } else {
-        setAdmins([]);
-        messageApi.error("ไม่สามารถดึงข้อมูลผู้ดูแลระบบได้");
+        setUsers([]);
+        messageApi.open({
+          type: "error",
+          content: res.data?.error || "เกิดข้อผิดพลาดในการโหลดข้อมูล",
+        });
       }
-    } catch (e) {
-      console.error("Load error:", e);
-      setAdmins([]);
-      messageApi.error("เกิดข้อผิดพลาดในการดึงข้อมูลผู้ดูแลระบบ");
+    } catch (error) {
+      console.error("Error loading admin data:", error);
+      setUsers([]);
+      messageApi.open({
+        type: "error",
+        content: "เกิดข้อผิดพลาดในการเชื่อมต่อ",
+      });
     } finally {
       setLoading(false);
     }
   };
 
   useEffect(() => {
-    loadAdmins();
+    getAdmin();
   }, []);
-
-  const formatDate = (dateString?: string) => {
-    if (!dateString) return "-";
-    try {
-      return new Date(dateString).toLocaleDateString('th-TH', {
-        year: 'numeric',
-        month: 'long',
-        day: 'numeric'
-      });
-    } catch {
-      return "-";
-    }
-  };
-
-  const columns: ColumnsType<AdminInterface> = [
-    {
-      title: "",
-      width: 50,
-      render: (record) => {
-        const isMe = String(record.ID ?? "") === myId;
-        if (isMe) return null;
-        return (
-          <Popconfirm
-            title="ยืนยันการลบ?"
-            description="คุณต้องการลบรายการนี้หรือไม่"
-            okText="ลบ"
-            cancelText="ยกเลิก"
-            onConfirm={() => handleDelete(record.ID as number)}
-          >
-            <Button 
-              type="text" 
-              danger 
-              icon={<DeleteOutlined />} 
-              size="small"
-            />
-          </Popconfirm>
-        );
-      },
-    },
-    {
-      title: "ID",
-      dataIndex: "ID",
-      key: "ID",
-      width: 80,
-      sorter: (a, b) => (a.ID || 0) - (b.ID || 0),
-    },
-    {
-      title: "ชื่อ",
-      dataIndex: "Firstname",
-      key: "Firstname",
-      sorter: (a, b) => (a.Firstname || "").localeCompare(b.Firstname || ""),
-    },
-    {
-      title: "นามสกุล",
-      dataIndex: "Lastname",
-      key: "Lastname",
-      sorter: (a, b) => (a.Lastname || "").localeCompare(b.Lastname || ""),
-    },
-    {
-      title: "อีเมล",
-      dataIndex: "Email",
-      key: "Email",
-      render: (email) => (
-        <a href={`mailto:${email}`} style={{ color: '#1890ff' }}>
-          {email}
-        </a>
-      ),
-    },
-    {
-      title: "วันเกิด",
-      dataIndex: "Birthday",
-      key: "Birthday",
-      width: 150,
-      render: formatDate,
-      sorter: (a, b) => {
-        const dateA = new Date(a.Birthday || "").getTime();
-        const dateB = new Date(b.Birthday || "").getTime();
-        return dateA - dateB;
-      },
-    },
-    {
-      title: "การจัดการ",
-      key: "action",
-      width: 120,
-      render: (record) => (
-        <Button
-          type="primary"
-          size="small"
-          icon={<EditOutlined />}
-          onClick={() => navigate(`/admin/edit/${record.ID}`)}
-        >
-          แก้ไข
-        </Button>
-      ),
-    },
-  ];
 
   return (
     <>
       {contextHolder}
-
-      <Row gutter={[16, 16]} align="middle">
-        <Col flex="auto">
-          <h2 style={{ margin: 0, fontSize: '24px', fontWeight: 600 }}>
-            จัดการข้อมูลผู้ดูแลระบบ
-          </h2>
+      <Row>
+        <Col span={12}>
+          <h2>จัดการข้อมูลสมาชิก</h2>
         </Col>
-        <Col>
-          <Link to="/admin/create">
-            <Button 
-              type="primary" 
-              icon={<PlusOutlined />}
-              size="large"
-            >
-              เพิ่มผู้ดูแลระบบ
-            </Button>
-          </Link>
+
+        <Col span={12} style={{ textAlign: "end", alignSelf: "center" }}>
+          <Space>
+            <Link to="/admin/create">
+              <Button type="primary" icon={<PlusOutlined />}>
+                สร้างข้อมูล
+              </Button>
+            </Link>
+          </Space>
         </Col>
       </Row>
+      <Divider />
 
-      <Divider style={{ margin: "16px 0" }} />
-
-      <div style={{ 
-        background: '#fff', 
-        padding: '24px', 
-        borderRadius: '8px',
-        boxShadow: '0 2px 8px rgba(0,0,0,0.1)'
-      }}>
-        <Table<AdminInterface>
-          rowKey={(record) => String(record.ID ?? Math.random())}
-          loading={loading}
+      <div style={{ marginTop: 20 }}>
+        <Table
+          rowKey="ID"
           columns={columns}
-          dataSource={admins}
-          pagination={{
-            pageSize: 10,
-            showSizeChanger: true,
-            showQuickJumper: true,
-            showTotal: (total, range) => 
-              `${range[0]}-${range[1]} จาก ${total} รายการ`,
-          }}
-          scroll={{ x: 800 }}
-          size="middle"
+          dataSource={users}
+          loading={loading}
+          style={{ width: "100%", overflow: "scroll" }}
         />
       </div>
     </>
   );
-};
+}
 
 export default Admin;

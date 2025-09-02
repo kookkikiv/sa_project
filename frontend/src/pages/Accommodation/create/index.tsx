@@ -1,3 +1,4 @@
+// src/page/Accommodation/create.tsx
 import {
   Space,
   Button,
@@ -12,26 +13,73 @@ import {
 } from "antd";
 import { useState, useEffect } from "react";
 import { PlusOutlined } from "@ant-design/icons";
-import { type AccommodationInterface } from "../../../interface/Accommodation";
-import { type ProvinceInterface } from "../../../interface/Province";
-import { type DistrictInterface } from "../../../interface/District";
-import { type SubdistrictInterface } from "../../../interface/Subdistrict";
+import { useNavigate, Link } from "react-router-dom";
+
 import {
   GetProvince,
   GetDistrict,
   GetSubdistrict,
   CreateAccommodation,
 } from "../../../services/https";
-import { useNavigate, Link } from "react-router-dom";
 
-function AccommodationCreate() {
+type BaseLoc = {
+  ID: number | string;
+  districtNameTh?: string;
+  districtNameEn?: string;
+  provinceNameTh?: string; provinceNameEn?: string;
+  subdistrictNameTh?: string; subdistrictNameEn?: string;
+  Name?: string; NameTh?: string; NameEn?: string; NameEN?: string;
+  ProvinceName?: string; province_name?: string;
+  DistrictName?: string; district_name?: string;
+  SubdistrictName?: string; subdistrict_name?: string;
+};
+
+type Province = BaseLoc;
+type District = BaseLoc & { ProvinceID?: number };
+type Subdistrict = BaseLoc & { DistrictID?: number };
+
+type AccommodationForm = {
+  Name?: string;
+  Type?: string;
+  Status?: string;
+  ProvinceID?: number;
+  DistrictID?: number;
+  SubdistrictID?: number;
+};
+
+const getDisplayName = (o: BaseLoc) =>
+  o?.districtNameTh || o?.districtNameEn ||
+  o?.provinceNameTh || o?.provinceNameEn ||
+  o?.subdistrictNameTh || o?.subdistrictNameEn ||
+  o?.NameTh || o?.NameEN || o?.NameEn || o?.Name ||
+  o?.ProvinceName || o?.province_name ||
+  o?.DistrictName || o?.district_name ||
+  o?.SubdistrictName || o?.subdistrict_name ||
+  String(o?.ID ?? "");
+
+
+
+const toOptions = (items: BaseLoc[]) =>
+  (items ?? []).map((it) => ({
+    value: Number(it.ID),
+    label: getDisplayName(it),
+  }));
+
+// --- ป้องกันกรณี API ห่อ data/ items ---
+const asArray = <T,>(val: any): T[] =>
+  Array.isArray(val) ? (val as T[]) :
+  Array.isArray(val?.data) ? (val.data as T[]) :
+  Array.isArray(val?.items) ? (val.items as T[]) :
+  [];
+
+export default function AccommodationCreate() {
   const navigate = useNavigate();
-  const [form] = Form.useForm<AccommodationInterface>();
+  const [form] = Form.useForm<AccommodationForm>();
   const [messageApi, contextHolder] = message.useMessage();
 
-  const [province, setProvince] = useState<ProvinceInterface[]>([]);
-  const [district, setDistrict] = useState<DistrictInterface[]>([]);
-  const [subdistrict, setSubdistrict] = useState<SubdistrictInterface[]>([]);
+  const [provinces, setProvinces] = useState<Province[]>([]);
+  const [districts, setDistricts] = useState<District[]>([]);
+  const [subdistricts, setSubdistricts] = useState<Subdistrict[]>([]);
 
   const [loadingProvince, setLoadingProvince] = useState(false);
   const [loadingDistrict, setLoadingDistrict] = useState(false);
@@ -40,72 +88,52 @@ function AccommodationCreate() {
   const [selectedProvince, setSelectedProvince] = useState<number | null>(null);
   const [selectedDistrict, setSelectedDistrict] = useState<number | null>(null);
 
-  // Helper functions to safely extract data arrays
-  const asArray = <T,>(val: any): T[] =>
-    Array.isArray(val) ? (val as T[])
-    : Array.isArray(val?.data) ? (val.data as T[])
-    : Array.isArray(val?.items) ? (val.items as T[])
-    : [];
-
-  // Fetch functions
-  const onGetProvince = async () => {
+  // ------- Fetchers -------
+  const fetchProvinces = async () => {
+    setLoadingProvince(true);
     try {
-      setLoadingProvince(true);
       const res = await GetProvince();
-      if (res.status === 200) {
-        setProvince(asArray<ProvinceInterface>(res.data));
-      } else {
-        setProvince([]);
-        messageApi.error(res?.data?.error ?? "ไม่พบข้อมูลจังหวัด");
-        navigate("/accommodation");
-      }
+      setProvinces(asArray<Province>(res?.data));
     } catch {
-      setProvince([]);
-      messageApi.error("เกิดข้อผิดพลาดในการโหลดจังหวัด");
-      navigate("/accommodation");
+      setProvinces([]);
+      messageApi.error("โหลดรายชื่อจังหวัดไม่สำเร็จ");
     } finally {
       setLoadingProvince(false);
     }
   };
 
-  const onGetDistrict = async (provinceId: number) => {
+  const fetchDistricts = async (provinceId: number) => {
+    setLoadingDistrict(true);
     try {
-      setLoadingDistrict(true);
       const res = await GetDistrict(provinceId);
-      if (res.status === 200) {
-        setDistrict(asArray<DistrictInterface>(res.data));
-      } else {
-        setDistrict([]);
-        messageApi.error(res?.data?.error ?? "ไม่พบข้อมูลอำเภอ");
-      }
+      setDistricts(asArray<District>(res?.data));
     } catch {
-      setDistrict([]);
-      messageApi.error("เกิดข้อผิดพลาดในการโหลดอำเภอ");
+      setDistricts([]);
+      messageApi.error("โหลดรายชื่ออำเภอไม่สำเร็จ");
     } finally {
       setLoadingDistrict(false);
     }
   };
 
-  const onGetSubdistrict = async (districtId: number) => {
+  const fetchSubdistricts = async (districtId: number) => {
+    setLoadingSubdistrict(true);
     try {
-      setLoadingSubdistrict(true);
       const res = await GetSubdistrict(districtId);
-      if (res.status === 200) {
-        setSubdistrict(asArray<SubdistrictInterface>(res.data));
-      } else {
-        setSubdistrict([]);
-        messageApi.error(res?.data?.error ?? "ไม่พบข้อมูลตำบล");
-      }
+      setSubdistricts(asArray<Subdistrict>(res?.data));
     } catch {
-      setSubdistrict([]);
-      messageApi.error("เกิดข้อผิดพลาดในการโหลดตำบล");
+      setSubdistricts([]);
+      messageApi.error("โหลดรายชื่อตำบลไม่สำเร็จ");
     } finally {
       setLoadingSubdistrict(false);
     }
   };
 
-  // Submit function
-  const onFinish = async (values: AccommodationInterface) => {
+  useEffect(() => {
+    void fetchProvinces();
+  }, []);
+
+  // ------- Submit -------
+  const onFinish = async (values: AccommodationForm) => {
     try {
       const adminId = localStorage.getItem("id");
       const payload = {
@@ -119,8 +147,8 @@ function AccommodationCreate() {
       };
 
       const res = await CreateAccommodation(payload);
-      if (res.status === 201 || res.status === 200) {
-        messageApi.success(res?.data?.message ?? "บันทึกสำเร็จ");
+      if (res?.status === 200 || res?.status === 201) {
+        messageApi.success(res?.data?.message ?? "บันทึกที่พักสำเร็จ");
         navigate("/accommodation");
       } else {
         messageApi.error(res?.data?.error ?? "บันทึกไม่สำเร็จ");
@@ -130,15 +158,11 @@ function AccommodationCreate() {
     }
   };
 
-  useEffect(() => {
-    void onGetProvince();
-  }, []);
-
   return (
     <div>
       {contextHolder}
-      <Card variant="outlined">
-        <h2>เพิ่มข้อมูล ที่พัก</h2>
+      <Card>
+        <h2>เพิ่มข้อมูลที่พัก</h2>
         <Divider />
         <Form
           form={form}
@@ -149,47 +173,59 @@ function AccommodationCreate() {
         >
           <Row gutter={[16, 0]}>
             {/* ชื่อที่พัก */}
-            <Col xs={24} sm={24} md={24} lg={12}>
+            <Col xs={24} md={12}>
               <Form.Item
                 label="ชื่อที่พัก"
                 name="Name"
                 rules={[{ required: true, message: "กรุณากรอกชื่อที่พัก !" }]}
               >
-                <Input />
+                <Input placeholder="เช่น โรงแรม ABC" />
               </Form.Item>
             </Col>
 
             {/* ลักษณะที่พัก */}
-            <Col xs={24} sm={24} md={24} lg={12}>
+            <Col xs={24} md={12}>
               <Form.Item
                 label="ลักษณะที่พัก"
                 name="Type"
                 rules={[{ required: true, message: "กรุณาเลือกลักษณะที่พัก !" }]}
               >
-                <Select placeholder="เลือกประเภทที่พัก" allowClear showSearch optionFilterProp="label">
-                  <Select.Option value="hotel">โรงแรม</Select.Option>
-                  <Select.Option value="resort">รีสอร์ท</Select.Option>
-                  <Select.Option value="hostel">โฮสเทล</Select.Option>
-                </Select>
+                <Select
+                  placeholder="เลือกประเภทที่พัก"
+                  allowClear
+                  showSearch
+                  optionFilterProp="label"
+                  options={[
+                    { value: "hotel",  label: "โรงแรม" },
+                    { value: "resort", label: "รีสอร์ท" },
+                    { value: "hostel", label: "โฮสเทล" },
+                  ]}
+                />
               </Form.Item>
             </Col>
 
             {/* สถานะที่พัก */}
-            <Col xs={24} sm={24} md={24} lg={12}>
+            <Col xs={24} md={12}>
               <Form.Item
                 label="สถานะที่พัก"
                 name="Status"
                 rules={[{ required: true, message: "กรุณาเลือกสถานะที่พัก !" }]}
               >
-                <Select placeholder="เลือกสถานะที่พัก" allowClear showSearch optionFilterProp="label">
-                  <Select.Option value="open">เปิดใช้บริการ</Select.Option>
-                  <Select.Option value="closed">ปิดปรับปรุง</Select.Option>
-                </Select>
+                <Select
+                  placeholder="เลือกสถานะ"
+                  allowClear
+                  showSearch
+                  optionFilterProp="label"
+                  options={[
+                    { value: "open",   label: "เปิดให้บริการ" },
+                    { value: "closed", label: "ปิดปรับปรุง" },
+                  ]}
+                />
               </Form.Item>
             </Col>
 
             {/* จังหวัด */}
-            <Col xs={24} sm={24} md={24} lg={12}>
+            <Col xs={24} md={12}>
               <Form.Item
                 label="จังหวัด"
                 name="ProvinceID"
@@ -199,32 +235,24 @@ function AccommodationCreate() {
                   placeholder="เลือกจังหวัด"
                   allowClear
                   showSearch
-                  optionFilterProp="children"
                   loading={loadingProvince}
+                  options={toOptions(provinces)}     // แสดงชื่อ เก็บเป็น ID
+                  optionFilterProp="label"
                   onChange={(value?: number) => {
+                    // รีเซ็ตอำเภอ/ตำบลทุกครั้งที่เปลี่ยนจังหวัด
                     setSelectedProvince(value ?? null);
                     setSelectedDistrict(null);
-                    setSubdistrict([]);
+                    setSubdistricts([]);
                     form.setFieldsValue({ DistrictID: undefined, SubdistrictID: undefined });
-                    if (typeof value === "number") void onGetDistrict(value);
+                    if (typeof value === "number") void fetchDistricts(value);
+                    else setDistricts([]);
                   }}
-                  filterOption={(input, option) =>
-                    (option?.children as unknown as string)
-                      ?.toLowerCase()
-                      ?.includes(input.toLowerCase()) ?? false
-                  }
-                >
-                  {province.map((item) => (
-                    <Select.Option key={item.ID} value={item.ID}>
-                      {item.NameTh || item.NameEn || `จังหวัด ${item.ID}`}
-                    </Select.Option>
-                  ))}
-                </Select>
+                />
               </Form.Item>
             </Col>
 
             {/* อำเภอ */}
-            <Col xs={24} sm={24} md={24} lg={12}>
+            <Col xs={24} md={12}>
               <Form.Item
                 label="อำเภอ"
                 name="DistrictID"
@@ -235,31 +263,22 @@ function AccommodationCreate() {
                   allowClear
                   disabled={!selectedProvince}
                   showSearch
-                  optionFilterProp="children"
                   loading={loadingDistrict}
+                  options={toOptions(districts)}
+                  optionFilterProp="label"
                   onChange={(value?: number) => {
+                    // รีเซ็ตตำบลเมื่อเปลี่ยนอำเภอ
                     setSelectedDistrict(value ?? null);
                     form.setFieldsValue({ SubdistrictID: undefined });
-                    if (typeof value === "number") void onGetSubdistrict(value);
-                    else setSubdistrict([]);
+                    if (typeof value === "number") void fetchSubdistricts(value);
+                    else setSubdistricts([]);
                   }}
-                  filterOption={(input, option) =>
-                    (option?.children as unknown as string)
-                      ?.toLowerCase()
-                      ?.includes(input.toLowerCase()) ?? false
-                  }
-                >
-                  {district.map((item) => (
-                    <Select.Option key={item.ID} value={item.ID}>
-                      {item.NameTh || item.NameEn || `อำเภอ ${item.ID}`}
-                    </Select.Option>
-                  ))}
-                </Select>
+                />
               </Form.Item>
             </Col>
 
             {/* ตำบล */}
-            <Col xs={24} sm={24} md={24} lg={12}>
+            <Col xs={24} md={12}>
               <Form.Item
                 label="ตำบล"
                 name="SubdistrictID"
@@ -270,27 +289,17 @@ function AccommodationCreate() {
                   allowClear
                   disabled={!selectedDistrict}
                   showSearch
-                  optionFilterProp="children"
                   loading={loadingSubdistrict}
-                  filterOption={(input, option) =>
-                    (option?.children as unknown as string)
-                      ?.toLowerCase()
-                      ?.includes(input.toLowerCase()) ?? false
-                  }
-                >
-                  {subdistrict.map((item) => (
-                    <Select.Option key={item.ID} value={item.ID}>
-                      {item.NameTh || item.NameEn || `ตำบล ${item.ID}`}
-                    </Select.Option>
-                  ))}
-                </Select>
+                  options={toOptions(subdistricts)}
+                  optionFilterProp="label"
+                />
               </Form.Item>
             </Col>
           </Row>
 
           {/* ปุ่ม */}
           <Row justify="end">
-            <Col style={{ marginTop: 40 }}>
+            <Col style={{ marginTop: 32 }}>
               <Form.Item>
                 <Space>
                   <Link to="/accommodation">
@@ -308,5 +317,3 @@ function AccommodationCreate() {
     </div>
   );
 }
-
-export default AccommodationCreate;

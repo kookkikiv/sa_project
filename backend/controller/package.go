@@ -397,13 +397,13 @@ func DeletePackageById(c *gin.Context) {
 	}()
 
 	// ลบ related records ก่อน (cascade delete)
-	if err := tx.Where("package_id = ?", id).Delete(&entity.Pac_Acc{}).Error; err != nil {
+	if err := tx.Where("package_id = ?", id).Delete(&entity.Accommodation{}).Error; err != nil {
 		tx.Rollback()
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to delete package accommodations"})
 		return
 	}
 
-	if err := tx.Where("package_id = ?", id).Delete(&entity.Pac_Event{}).Error; err != nil {
+	if err := tx.Where("package_id = ?", id).Delete(&entity.Event{}).Error; err != nil {
 		tx.Rollback()
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to delete package events"})
 		return

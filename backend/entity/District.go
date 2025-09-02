@@ -1,21 +1,22 @@
 package entity
 
 import(
-	//"gorm.io/gorm"
+	"gorm.io/gorm"
 )
 
 type District struct{
-    DistrictID        string `gorm:"primaryKey" json:"DistrictID"`
+    gorm.Model
+	DistrictCode string `gorm:"size:2;not null;uniqueIndex" json:"districtCode"`
     NameTh      string `json:"districtNameTh"`
     NameEn      string `json:"districtNameEn"`
 
-	ProvinceID		*uint
-	Province		Province `gorm:"foreignkey:ProvinceID"`
+	ProvinceID uint     `gorm:"not null;index" json:"province_id"`
+    Province   Province `gorm:"constraint:OnUpdate:CASCADE,OnDelete:RESTRICT;"`
 	
 
-	Subdistrict []Subdistrict `gorm:"foreignKey:SubdistrictID"`
+    Subdistricts   []Subdistrict   `gorm:"constraint:OnUpdate:CASCADE,OnDelete:RESTRICT;"`
+    Accommodations []Accommodation `gorm:"foreignKey:DistrictID"`
+    Events         []Event         `gorm:"foreignKey:DistrictID"`
+    Packages       []Package       `gorm:"foreignKey:DistrictID"`
 
-	Accommodation []Accommodation `gorm:"foreignKey:DistrictID"`
-	Event []Event `gorm:"foreignKey:DistrictID"`
-	Package []Package `gorm:"foreignKey:DistrictID"`
 }

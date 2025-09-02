@@ -432,7 +432,7 @@ func AssignFacilityToRoom(c *gin.Context) {
 	}
 
 	// Check if assignment already exists
-	var existingAssignment entity.Fac_Room
+	var existingAssignment entity.Room
 	if err := db.Where("facility_id = ? AND room_id = ?", facilityId, request.RoomID).
 		First(&existingAssignment).Error; err == nil {
 		c.JSON(http.StatusConflict, gin.H{"error": "Facility already assigned to this room"})
@@ -441,7 +441,7 @@ func AssignFacilityToRoom(c *gin.Context) {
 
 	// Create new assignment
 	facilityIdUint, _ := strconv.ParseUint(facilityId, 10, 32)
-	assignment := entity.Fac_Room{
+	assignment := entity.Room{
 		FacilityID: func(id uint) *uint { return &id }(uint(facilityIdUint)),
 		RoomID:     &request.RoomID,
 	}
@@ -476,7 +476,7 @@ func UnassignFacilityFromAccommodation(c *gin.Context) {
 
 	// Find and delete the assignment
 	result := db.Where("facility_id = ? AND accommodation_id = ?", facilityId, accommodationId).
-		Delete(&entity.Fac_Acc{})
+		Delete(&entity.Accommodation{})
 
 	if result.Error != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to unassign facility"})
@@ -510,7 +510,7 @@ func UnassignFacilityFromRoom(c *gin.Context) {
 
 	// Find and delete the assignment
 	result := db.Where("facility_id = ? AND room_id = ?", facilityId, roomId).
-		Delete(&entity.Fac_Room{})
+		Delete(&entity.Room{})
 
 	if result.Error != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to unassign facility"})
