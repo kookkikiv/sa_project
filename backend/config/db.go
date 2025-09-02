@@ -18,7 +18,8 @@ func ConnectionDB() {
 	
 	database, err := gorm.Open(sqlite.Open("project2.db?cache=shared"), &gorm.Config{})
 	if err != nil {
-		fmt.Println("failed to connect database")
+		fmt.Printf("Failed to connect to database: %v\n", err)
+		panic(err)
 	}
 
 	fmt.Println("Connected to database successfully")
@@ -66,13 +67,6 @@ func SetupDatabase() {
 		&entity.Subdistrict{},
 		&entity.Admin{},
 		&entity.PackageStay{},
-		
-
-	
-
-
-
-		
 	)
 
 	hashedPassword, _ := HashPassword("123456")
