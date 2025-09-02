@@ -10,8 +10,8 @@ type Province struct{
     NameTh string `json:"provinceNameTh"`
     NameEn string `json:"provinceNameEn"`
 
-  	Districts      []District     `gorm:"constraint:OnUpdate:CASCADE,OnDelete:RESTRICT;"`
+    Districts      []District      `gorm:"foreignKey:ProvinceID;constraint:OnUpdate:CASCADE,OnDelete:RESTRICT;"`
     Accommodations []Accommodation `gorm:"foreignKey:ProvinceID"`
-    Events         []Event         `gorm:"foreignKey:ProvinceID"`
+    Events         []Event         `gorm:"foreignKey:ProvinceID"`  // ใช้ ProvinceID แทน province_id
     Packages       []Package       `gorm:"foreignKey:ProvinceID"`
 }
