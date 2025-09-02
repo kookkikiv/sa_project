@@ -38,7 +38,7 @@ const getAuthHeaders = () => {
 
 const fetchRooms = async () => {
   try {
-    const response = await fetch(`${apiUrl}/admin`, {
+    const response = await fetch(`${apiUrl}/facility`, {
       headers: getAuthHeaders(),
     });
     if (response.ok) {
@@ -54,7 +54,7 @@ const fetchRooms = async () => {
 
 const deleteAdminById = async (id: string) => {
   try {
-    const response = await fetch(`${apiUrl}/admin/${id}`, {
+    const response = await fetch(`${apiUrl}/facility/${id}`, {
       method: "DELETE",
       headers: getAuthHeaders(),
     });
@@ -161,17 +161,23 @@ const Facility: React.FC = () => {
       sorter: (a, b) => (a.Name || "").localeCompare(b.Name || ""),
     },
     {
-      title: "ลักษณะห้อง",
+      title: "ประเภท",
       dataIndex: "Type",
       key: "Type",
-      sorter: (a, b) => (a.Type || "").localeCompare(b.Type || ""),
+      render: (value) => value === "accommodation" ? "ที่พัก" : "ห้องพัก",
     },
-    {
-      title: "ลักษณะเตียง",
-      dataIndex: "BedType",
-      key: "BedType",
-      sorter: (a, b) => (a.BedType || "").localeCompare(b.BedType || ""),
+        {
+      title: "เชื่อมโยงกับ",
+      key: "relation",
+      render: (record) => {
+        if (record.Type === "accommodation"){
+          return `ที่พัก ID: ${record.AccommodationID || "-"}`;
+        } else{
+          return `ห้อง ID: ${record.RoomID || "-"}`;
+        }
+      },
     },
+
         {
       title: "สถานะ",
       dataIndex: "Status",
@@ -188,7 +194,7 @@ const Facility: React.FC = () => {
           type="primary"
           size="small"
           icon={<EditOutlined />}
-          onClick={() => navigate(`/admin/edit/${record.ID}`)}
+          onClick={() => navigate(`/facility/edit/${record.ID}`)}
         >
           แก้ไข
         </Button>
@@ -207,7 +213,7 @@ const Facility: React.FC = () => {
           </h2>
         </Col>
         <Col>
-          <Link to="/admin/create">
+          <Link to="/facility/create">
             <Button 
               type="primary" 
               icon={<PlusOutlined />}

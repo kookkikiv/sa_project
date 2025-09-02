@@ -61,24 +61,57 @@ func FindFacilityById(c *gin.Context) {
 }
 
 // POST /facility
+// POST /facility
 func CreateFacility(c *gin.Context) {
-	var fac entity.Facility
-	if err := c.ShouldBindJSON(&fac); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid JSON format", "details": err.Error()})
-		return
-	}
-	fac.Name = strings.TrimSpace(fac.Name)
-	fac.Type = strings.TrimSpace(fac.Type)
-	if fac.Name == "" || fac.Type == "" {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "name & type are required"})
-		return
-	}
+    var fac entity.Facility
+    if err := c.ShouldBindJSON(&fac); err != nil {
+        c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid JSON format", "details": err.Error()})
+        return
+    }
+    
+    fac.Name = strings.TrimSpace(fac.Name)
+    fac.Type = strings.TrimSpace(fac.Type)
+    
+    if fac.Name == "" || fac.Type == "" {
+        c.JSON(http.StatusBadRequest, gin.H{"error": "name & type are required"})
+        return
+    }
 
-	if err := config.DB().Create(&fac).Error; err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to create facility", "details": err.Error()})
-		return
-	}
-	c.JSON(http.StatusCreated, gin.H{"data": fac, "message": "Facility created successfully"})
+    // Validate relationships based on type
+    if fac.Type == "accommodation" && fac.AccommodationID == nil {
+        c.JSON(http.StatusBadRequest, gin.H{"error": "accommodation_id is required for accommodation type"})
+        return
+    }
+    
+    if fac.Type == "room" && fac.RoomID == nil {
+        c.JSON(http.StatusBadRequest, gin.H{"error": "room_id is required for room type"})
+        return
+    }
+    
+    // Validate FK exists
+    db := config.DB()
+    if fac.AccommodationID != nil {
+        var acc entity.Accommodation
+        if err := db.First(&acc, *fac.AccommodationID).Error; err != nil {
+            c.JSON(http.StatusBadRequest, gin.H{"error": "Accommodation not found"})
+            return
+        }
+    }
+    
+    if fac.RoomID != nil {
+        var room entity.Room
+        if err := db.First(&room, *fac.RoomID).Error; err != nil {
+            c.JSON(http.StatusBadRequest, gin.H{"error": "Room not found"})
+            return
+        }
+    }
+
+    if err := db.Create(&fac).Error; err != nil {
+        c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to create facility", "details": err.Error()})
+        return
+    }
+    
+    c.JSON(http.StatusCreated, gin.H{"data": fac, "message": "Facility created successfully"})
 }
 
 // PUT /facility/:id
