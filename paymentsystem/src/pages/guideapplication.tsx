@@ -1,5 +1,6 @@
 // GuideRegistration.tsx
-import React, { useState } from "react";
+import React, { useState ,useEffect} from "react";
+import { useNavigate } from "react-router-dom";
 import {
   Form,
   Input,
@@ -22,7 +23,23 @@ import {
 } from "@ant-design/icons";
 import { motion } from "framer-motion";
 import bgImage from "../assets/bangkok-thailand.jpg";
+import {
+  GetProvince,
+  GetDistrict,
+} from "../../../frontend/src/services/https";
+type BaseLoc = {
+  ID: number | string;
+  districtNameTh?: string;
+  districtNameEn?: string;
+  provinceNameTh?: string; provinceNameEn?: string;
+  Name?: string; NameTh?: string; NameEn?: string; NameEN?: string;
+  ProvinceName?: string; province_name?: string;
+  DistrictName?: string; district_name?: string;
+ 
+};
 
+type Province = BaseLoc;
+type District = BaseLoc & { ProvinceID?: number };
 const { Option } = Select;
 const { Title, Text, Link } = Typography;
 
@@ -30,9 +47,68 @@ const containerVariants = {
   hidden: { opacity: 0, y: 20 },
   visible: { opacity: 1, y: 0, transition: { staggerChildren: 0.1 } },
 };
+const getDisplayName = (o: BaseLoc) =>
+  o?.districtNameTh || o?.districtNameEn ||
+  o?.provinceNameTh || o?.provinceNameEn ||
+  o?.NameTh || o?.NameEN || o?.NameEn || o?.Name ||
+  o?.ProvinceName || o?.province_name ||
+  o?.DistrictName || o?.district_name ||
+  String(o?.ID ?? "");
 
 const itemVariants = { hidden: { opacity: 0, y: 15 }, visible: { opacity: 1, y: 0 } };
+export default function GuideCreate() {
+  const navigate = useNavigate();
+  const [messageApi, contextHolder] = message.useMessage();
 
+  const [provinces, setProvinces] = useState<Province[]>([]);
+  const [districts, setDistricts] = useState<District[]>([]);
+  
+
+  const [loadingProvince, setLoadingProvince] = useState(false);
+  const [loadingDistrict, setLoadingDistrict] = useState(false);
+  
+  const [selectedProvince, setSelectedProvince] = useState<number | null>(null);
+  const [selectedDistrict, setSelectedDistrict] = useState<number | null>(null);
+
+const toOptions = (items: BaseLoc[]) =>
+  (items ?? []).map((it) => ({
+    value: Number(it.ID),
+    label: getDisplayName(it),
+  }));
+
+// --- ป้องกันกรณี API ห่อ data/ items ---
+const asArray = <T,>(val: any): T[] =>
+  Array.isArray(val) ? (val as T[]) :
+  Array.isArray(val?.data) ? (val.data as T[]) :
+  Array.isArray(val?.items) ? (val.items as T[]) :
+  [];
+
+  // ------- Fetchers -------
+  const fetchProvinces = async () => {
+    setLoadingProvince(true);
+    try {
+      const res = await GetProvince();
+      setProvinces(asArray<Province>(res?.data));
+    } catch {
+      setProvinces([]);
+      messageApi.error("โหลดรายชื่อจังหวัดไม่สำเร็จ");
+    } finally {
+      setLoadingProvince(false);
+    }
+  };
+
+  const fetchDistricts = async (provinceId: number) => {
+    setLoadingDistrict(true);
+    try {
+      const res = await GetDistrict(provinceId);
+      setDistricts(asArray<District>(res?.data));
+    } catch {
+      setDistricts([]);
+      messageApi.error("โหลดรายชื่ออำเภอไม่สำเร็จ");
+    } finally {
+      setLoadingDistrict(false);
+    }
+  };
 const GuideRegistration: React.FC = () => {
   const [form] = Form.useForm();
   const [lightMode, setLightMode] = useState(false);
@@ -193,20 +269,6 @@ const GuideRegistration: React.FC = () => {
                     </Form.Item>
                   </motion.div>
                 </Col>
-                <Col span={12}>
-                  <motion.div variants={itemVariants}>
-                    <Form.Item
-                      label="Region"
-                      name="RG"
-                      rules={[{ required: true, message: "Please select a Region" }]}
-                    >
-                      <Select placeholder="Select Region">
-                        <Option value="north">North</Option>
-                        <Option value="south">South</Option>
-                      </Select>
-                    </Form.Item>
-                  </motion.div>
-                </Col>
               </Row>
 
               <Row gutter={16}>
@@ -214,12 +276,23 @@ const GuideRegistration: React.FC = () => {
                   <motion.div variants={itemVariants}>
                     <Form.Item
                       label="Province"
-                      name="PV"
+                      name="ProvinceID"
                       rules={[{ required: true, message: "Please select a Province" }]}
                     >
                       <Select placeholder="Select Province">
-                        <Option value="chiangmai">Chiang Mai</Option>
-                        <Option value="bangkok">Bangkok</Option>
+                        allowClear
+                        showSearch
+                        loading={loadingProvince}
+                        options={toOptions(provinces)}
+                        optionFilterProp="label"
+                        onChange={(value?: number) => {
+                    // รีเซ็ตอำเภอ/ตำบลทุกครั้งที่เปลี่ยนจังหวัด
+                        setSelectedProvince(value ?? null);
+                        setSelectedDistrict(null);
+                        form.setFieldsValue({ DistrictID: undefined });
+                        if (typeof value === "number") void fetchDistricts(value);
+                        else setDistricts([]);
+                  }}
                       </Select>
                     </Form.Item>
                   </motion.div>
