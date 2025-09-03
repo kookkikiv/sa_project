@@ -108,6 +108,8 @@ func main() {
 			th.GET("/stats", controller.GetThailandStats)
 			th.POST("/clear-data", controller.ClearThailandData)
 		}
+
+		
 	}
 
 	// ---------- Legacy routes (คงไว้สำหรับ FE เดิม) ----------

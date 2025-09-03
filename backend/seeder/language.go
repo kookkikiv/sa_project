@@ -1,7 +1,7 @@
 package seeder
 
 import (
-	"github.com/backend/entity"
+	"github.com/kookkikiv/sa_project/backend/entity"
 	"gorm.io/gorm"
 )
 

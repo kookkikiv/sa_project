@@ -2,8 +2,8 @@ package seeder
 
 import (
 	"fmt"
-	"github.com/backend/config"
-	"github.com/backend/entity"
+	"github.com/kookkikiv/sa_project/backend/config"
+	"github.com/kookkikiv/sa_project/backend/entity"
 )
 
 func SeedGuideTypes() {
