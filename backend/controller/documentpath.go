@@ -5,8 +5,8 @@ import (
 	"os"
 	"path/filepath"
 	"github.com/gin-gonic/gin"
-	"github.com/backend/config"
-	"github.com/backend/entity"
+	"github.com/kookkikiv/sa_project/backend/config"
+	"github.com/kookkikiv/sa_project/backend/entity"
 )
 
 // UploadDocument handles file upload

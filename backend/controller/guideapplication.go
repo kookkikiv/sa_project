@@ -5,8 +5,8 @@ import (
 	"time"
 
 	"github.com/gin-gonic/gin"
-	"github.com/backend/config"
-	"github.com/backend/entity"
+	"github.com/kookkikiv/sa_project/backend/config"
+	"github.com/kookkikiv/sa_project/backend/entity"
 )
 
 // Response struct for frontend
@@ -142,7 +142,7 @@ func GetGuideApplication(c *gin.Context) {
 
 
 func GetProvinces(c *gin.Context) {
-	var provinces []entity.ProvinceArea
+	var provinces []entity.Province
 	db := config.DB()
 
 	// Only provinces that need guides
