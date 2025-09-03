@@ -135,7 +135,20 @@ func FindFacility(c *gin.Context) {
 	c.JSON(http.StatusOK, gin.H{"data": items})
 }
 
+func FindFacilityById(c *gin.Context) {
+	id := c.Param("id")
 
+	var item entity.Facility
+	if err := config.DB().
+		Preload("Accommodation").
+		Preload("Room").
+		First(&item, id).Error; err != nil {
+		c.JSON(http.StatusNotFound, gin.H{"error": "facility not found"})
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{"data": item})
+}
 // DELETE /facility/:id
 func DeleteFacilityById(c *gin.Context) {
 	var item entity.Facility

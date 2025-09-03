@@ -12,6 +12,8 @@ import Profile from '../pages/profile.tsx';
 import Payments from '../pages/payments.tsx';
 import CheckPayment from '../pages/checkpayment.tsx';
 import CompletePayment from '../pages/completepayment.tsx';
+import Hotels from '../pages/hotel.tsx';
+import PackagesPage from '../pages/package.tsx';
 
 
 
@@ -39,6 +41,8 @@ const AppRouter = () => {
         <Route path="/payments" element={<Payments />} />
         <Route path="/check-payment" element={<CheckPayment />} />
         <Route path="/complete-payment" element={<CompletePayment />} />
+        <Route path="/hotels" element={<Hotels />} />
+        <Route path="/packages" element={<PackagesPage />} />
       </Routes>
     </BrowserRouter>
   );

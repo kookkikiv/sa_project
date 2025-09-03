@@ -95,7 +95,7 @@ func main() {
 		fac := api.Group("/facility")
 		{
 			fac.GET("", controller.FindFacility)
-			//fac.GET("/:id", controller.FindFacilityById)
+			fac.GET("/:id", controller.FindFacilityById)
 			fac.POST("", controller.CreateFacility)
 			fac.PUT("/:id", controller.UpdateFacilityById)
 			fac.DELETE("/:id", controller.DeleteFacilityById)
@@ -145,7 +145,7 @@ func main() {
 	r.DELETE("/room/:id", controller.DeleteRoomById)
 
 	r.GET("/facility", controller.FindFacility)
-	//r.GET("/facility/:id", controller.FindFacilityById)
+	r.GET("/facility/:id", controller.FindFacilityById)
 	r.POST("/facility", controller.CreateFacility)
 	r.PUT("/facility/:id", controller.UpdateFacilityById)
 	r.DELETE("/facility/:id", controller.DeleteFacilityById)

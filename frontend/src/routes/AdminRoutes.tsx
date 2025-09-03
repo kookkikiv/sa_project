@@ -69,7 +69,6 @@ const AdminRoutes = (isLoggedIn: boolean): RouteObject => {
         ],
       },
 
-      // Package routes
       {
         path: "package",
         children: [

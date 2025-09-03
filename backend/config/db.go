@@ -34,8 +34,13 @@ func SetupDatabase() {
 		&entity.Province{},
 		&entity.District{},
 		&entity.Subdistrict{},
+		&entity.ServiceArea{},
 		&entity.Admin{},
+		&entity.Member{},
 		&entity.Guide{},
+		&entity.GuideType{},
+		&entity.GuideApplication{},
+		&entity.Language{},
 
 		&entity.Accommodation{},
 		&entity.Room{},

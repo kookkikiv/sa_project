@@ -216,6 +216,32 @@ export default function PackageCreate() {
                 <InputNumber min={0} style={{ width: "100%" }} placeholder="เช่น 3999" />
               </Form.Item>
             </Col>
+            {/* กิจกรรม */}
+            <Col xs={24} md={12}>
+              <Form.Item
+                label="กิจกรรม"
+                name="event"
+                rules={[{ required: true, message: "กรุณาระบุกิจกรรม !" }]}
+              >
+                <Select
+                  placeholder="เลือกกิจกรรม"
+                  allowClear
+                  showSearch
+                  loading={loadingProvince}
+                  options={toOptions(provinces)}     // แสดงชื่อ เก็บเป็น ID (number)
+                  optionFilterProp="label"
+                  onChange={(value?: number) => {
+                    // รีเซ็ตอำเภอ/ตำบลทุกครั้งที่เปลี่ยนจังหวัด
+                    setSelectedProvince(value ?? null);
+                    setSelectedDistrict(null);
+                    setSubdistricts([]);
+                    form.setFieldsValue({ district_id: undefined, subdistrict_id: undefined });
+                    if (typeof value === "number") void fetchDistricts(value);
+                    else setDistricts([]);
+                  }}
+                />
+              </Form.Item>
+            </Col>
 
             {/* ไกด์ไอดี (ถ้ายังไม่มีรายการไกด์ ให้ใส่เป็นเลขไอดี) */}
             <Col xs={24} md={12}>
@@ -224,7 +250,23 @@ export default function PackageCreate() {
                 name="guide_id"
                 rules={[{ required: true, message: "กรุณาระบุไกด์ !" }]}
               >
-                <InputNumber min={1} style={{ width: "100%" }} placeholder="เช่น 1" />
+                <Select
+                  placeholder="เลือกไกด์"
+                  allowClear
+                  showSearch
+                  loading={loadingProvince}
+                  options={toOptions(provinces)}     // แสดงชื่อ เก็บเป็น ID (number)
+                  optionFilterProp="label"
+                  onChange={(value?: number) => {
+                    // รีเซ็ตอำเภอ/ตำบลทุกครั้งที่เปลี่ยนจังหวัด
+                    setSelectedProvince(value ?? null);
+                    setSelectedDistrict(null);
+                    setSubdistricts([]);
+                    form.setFieldsValue({ district_id: undefined, subdistrict_id: undefined });
+                    if (typeof value === "number") void fetchDistricts(value);
+                    else setDistricts([]);
+                  }}
+                />
               </Form.Item>
             </Col>
 

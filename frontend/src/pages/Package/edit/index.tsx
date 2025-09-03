@@ -1,378 +1,366 @@
-// src/pages/Package/edit/index.tsx
-import { useState, useEffect } from "react";
+// src/pages/Facility/edit/index.tsx
+import { useEffect, useMemo, useState } from "react";
 import {
-  Space,
-  Button,
-  Col,
-  Row,
-  Divider,
-  Form,
-  Input,
-  Card,
-  message,
-  Select,
-  InputNumber,
-  DatePicker,
+  Row, Col, Card, Form, Select, Button, Space, Alert, message, Divider,
 } from "antd";
-import { PlusOutlined } from "@ant-design/icons";
-import { useNavigate, Link, useParams } from "react-router-dom";
-import dayjs, { Dayjs } from "dayjs";
+import { SaveOutlined, ArrowLeftOutlined } from "@ant-design/icons";
+import { Link, useNavigate, useParams } from "react-router-dom";
 
-import {
-  GetProvince,
-  GetDistrict,
-  GetSubdistrict,
-  GetPackageById,
-  UpdatePackageById,
-} from "../../../services/https";
+const apiUrl = "http://localhost:8000";
+const getAuthHeaders = () => {
+  const token = localStorage.getItem("token");
+  const tokenType = localStorage.getItem("token_type");
+  return {
+    "Content-Type": "application/json",
+    ...(token && tokenType ? { Authorization: `${tokenType} ${token}` } : {}),
+  };
+};
+const asArray = <T,>(v: any): T[] =>
+  Array.isArray(v) ? v : Array.isArray(v?.data) ? v.data : Array.isArray(v?.items) ? v.items : [];
 
-// ---------- ประเภทข้อมูลสถานที่ ----------
-type BaseLoc = {
-  ID: number | string;
-  districtNameTh?: string;
-  districtNameEn?: string;
-  provinceNameTh?: string; provinceNameEn?: string;
-  subdistrictNameTh?: string; subdistrictNameEn?: string;
-  Name?: string; NameTh?: string; NameEn?: string; NameEN?: string;
-  ProvinceName?: string; province_name?: string;
-  DistrictName?: string; district_name?: string;
-  SubdistrictName?: string; subdistrict_name?: string;
+// ---- APIs ----
+async function fetchAccommodations() {
+  const res = await fetch(`${apiUrl}/accommodation`, { headers: getAuthHeaders() });
+  const json = await res.json().catch(() => ({}));
+  return { status: res.status, data: json?.data ?? json };
+}
+async function fetchRooms() {
+  const res = await fetch(`${apiUrl}/room`, { headers: getAuthHeaders() });
+  const json = await res.json().catch(() => ({}));
+  return { status: res.status, data: json?.data ?? json };
+}
+async function getFacilityById(id: string | number) {
+  const res = await fetch(`${apiUrl}/facility/${id}`, { headers: getAuthHeaders() });
+  if (!res.ok) return { status: res.status, data: null, error: await res.text() };
+  const json = await res.json().catch(() => ({}));
+  return { status: res.status, data: json?.data ?? json, error: null };
+}
+async function updateFacilityById(id: string | number, body: any) {
+  const res = await fetch(`${apiUrl}/facility/${id}`, {
+    method: "PUT",
+    headers: getAuthHeaders(),
+    body: JSON.stringify(body),
+  });
+  const json = await res.json().catch(() => ({}));
+  return { status: res.status, data: json };
+}
+
+// ---- constants ----
+const FACILITY_TYPES = [
+  { value: "accommodation", label: "สิ่งอำนวยความสะดวกในที่พัก" },
+  { value: "room", label: "สิ่งอำนวยความสะดวกในห้องพัก" },
+];
+const FACILITY_OPTIONS = {
+  accommodation: [
+    { value: "swimming_pool", label: "สระว่ายน้ำ" },
+    { value: "fitness_center", label: "ห้องออกกำลังกาย" },
+    { value: "restaurant", label: "ร้านอาหาร" },
+    { value: "parking", label: "ที่จอดรถ" },
+    { value: "wifi_lobby", label: "WiFi ในล็อบบี้" },
+    { value: "elevator", label: "ลิฟต์" },
+  ],
+  room: [
+    { value: "air_conditioning", label: "เครื่องปรับอากาศ" },
+    { value: "towel", label: "ผ้าเช็ดตัว" },
+    { value: "hair_dryer", label: "ไดร์เป่าผม" },
+    { value: "wifi", label: "WiFi" },
+    { value: "tv", label: "โทรทัศน์" },
+  ],
+} as const;
+
+type FacilityForm = {
+  Type?: "accommodation" | "room";
+  Name?: string;
+  AccommodationID?: number;      // โหมดที่พัก
+  RoomAccommodationID?: number;  // โหมดห้อง: ที่พักของห้อง
+  RoomID?: number;               // โหมดห้อง: ห้อง
 };
 
-type Province = BaseLoc;
-type District = BaseLoc & { ProvinceID?: number };
-type Subdistrict = BaseLoc & { DistrictID?: number };
-
-// ---------- ฟอร์มแพ็กเกจ (ให้ตรงกับ PackageInterface) ----------
-type PackageForm = {
-  ID?: number;
-  name?: string;
-  people?: number;
-  start_date?: Dayjs;     // ในฟอร์มใช้ Dayjs
-  final_date?: Dayjs;
-  price?: number;
-  guide_id?: number;
-  province_id?: number;
-  district_id?: number;
-  subdistrict_id?: number;
-  admin_id?: number;
-};
-
-// ---------- helpers ----------
-const getDisplayName = (o: BaseLoc) =>
-  o?.districtNameTh || o?.districtNameEn ||
-  o?.provinceNameTh || o?.provinceNameEn ||
-  o?.subdistrictNameTh || o?.subdistrictNameEn ||
-  o?.NameTh || o?.NameEN || o?.NameEn || o?.Name ||
-  o?.ProvinceName || o?.province_name ||
-  o?.DistrictName || o?.district_name ||
-  o?.SubdistrictName || o?.subdistrict_name ||
-  String(o?.ID ?? "");
-
-const toOptions = (items: BaseLoc[]) =>
-  (items ?? []).map((it) => ({
-    value: Number(it.ID),
-    label: getDisplayName(it),
-  }));
-
-const asArray = <T,>(val: any): T[] =>
-  Array.isArray(val) ? (val as T[])
-  : Array.isArray(val?.data) ? (val.data as T[])
-  : Array.isArray(val?.items) ? (val.items as T[])
-  : [];
-
-export default function PackageEdit() {
-  const navigate = useNavigate();
+export default function FacilityEdit() {
   const { id } = useParams<{ id: string }>();
-  const [form] = Form.useForm<PackageForm>();
+  const navigate = useNavigate();
+  const [form] = Form.useForm<FacilityForm>();
   const [messageApi, contextHolder] = message.useMessage();
 
-  const [provinces, setProvinces] = useState<Province[]>([]);
-  const [districts, setDistricts] = useState<District[]>([]);
-  const [subdistricts, setSubdistricts] = useState<Subdistrict[]>([]);
+  const [type, setType] = useState<FacilityForm["Type"]>();
+  const [accommodations, setAccommodations] = useState<any[]>([]);
+  const [rooms, setRooms] = useState<any[]>([]);
+  const [accForRoom, setAccForRoom] = useState<number | null>(null);
 
-  const [loadingProvince, setLoadingProvince] = useState(false);
-  const [loadingDistrict, setLoadingDistrict] = useState(false);
-  const [loadingSubdistrict, setLoadingSubdistrict] = useState(false);
   const [saving, setSaving] = useState(false);
+  const [loadingData, setLoadingData] = useState(false);
 
-  // watch ค่าที่เลือก เพื่อคุม disable ของ select ลูก
-  const provinceIdWatch = Form.useWatch<number | undefined>("province_id", form);
-  const districtIdWatch  = Form.useWatch<number | undefined>("district_id", form);
+  const accommodationOptions = useMemo(
+    () =>
+      (accommodations ?? []).map((a: any) => ({
+        value: Number(a.ID ?? a.id),
+        label: a.Name ?? a.name ?? `ที่พัก #${a.ID ?? a.id}`,
+      })),
+    [accommodations]
+  );
 
-  // ------- Fetchers -------
-  const fetchProvinces = async () => {
-    setLoadingProvince(true);
-    try {
-      const res = await GetProvince();
-      setProvinces(asArray<Province>(res?.data));
-    } catch {
-      setProvinces([]);
-      messageApi.error("โหลดรายชื่อจังหวัดไม่สำเร็จ");
-    } finally {
-      setLoadingProvince(false);
-    }
-  };
+  const getAccIdFromRoom = (r: any) =>
+    r.AccommodationID ?? r.accommodation_id ?? r.Accommodation?.ID ?? r.accommodation?.ID;
+  const getAccNameFromRoom = (r: any) =>
+    r.Accommodation?.Name ?? r.accommodation?.Name ?? r.accommodation?.name;
 
-  const fetchDistricts = async (provinceId: number) => {
-    setLoadingDistrict(true);
-    try {
-      const res = await GetDistrict(provinceId);
-      setDistricts(asArray<District>(res?.data));
-    } catch {
-      setDistricts([]);
-      messageApi.error("โหลดรายชื่ออำเภอไม่สำเร็จ");
-    } finally {
-      setLoadingDistrict(false);
-    }
-  };
+  const roomOptions = useMemo(() => {
+    return (rooms ?? [])
+      .filter((r: any) => (accForRoom ? getAccIdFromRoom(r) === accForRoom : false))
+      .map((r: any) => ({
+        value: Number(r.ID ?? r.id),
+        label: `${r.Name ?? r.name ?? `ห้อง #${r.ID ?? r.id}`} (${getAccNameFromRoom(r) ?? `ที่พัก #${getAccIdFromRoom(r) ?? "-"}`})`,
+      }));
+  }, [rooms, accForRoom]);
 
-  const fetchSubdistricts = async (districtId: number) => {
-    setLoadingSubdistrict(true);
-    try {
-      const res = await GetSubdistrict(districtId);
-      setSubdistricts(asArray<Subdistrict>(res?.data));
-    } catch {
-      setSubdistricts([]);
-      messageApi.error("โหลดรายชื่อตำบลไม่สำเร็จ");
-    } finally {
-      setLoadingSubdistrict(false);
-    }
-  };
-
-  // ดึงข้อมูลเดิมของแพ็กเกจ
-  const loadPackage = async (pkgId: string) => {
-    const res = await GetPackageById(pkgId);
-    if (res?.status !== 200) throw new Error(res?.data?.error ?? "ไม่พบข้อมูลแพ็กเกจ");
-
-    const d = res.data || {};
-    const init: PackageForm = {
-      ID: d.ID,
-      name: d.name ?? d.Name,
-      people: d.people ?? d.People,
-      start_date: d.start_date ? dayjs(d.start_date) : (d.StartDate ? dayjs(d.StartDate) : undefined),
-      final_date: d.final_date ? dayjs(d.final_date) : (d.FinalDate ? dayjs(d.FinalDate) : undefined),
-      price: d.price ?? d.Price,
-      guide_id: d.guide_id ?? d.GuideID,
-      province_id: d.province_id ?? d.ProvinceID,
-      district_id: d.district_id ?? d.DistrictID,
-      subdistrict_id: d.subdistrict_id ?? d.SubdistrictID,
-      admin_id: d.admin_id ?? d.AdminID,
-    };
-    return init;
-  };
-
-  // ------- Init: โหลดตามลำดับ -------
+  // init
   useEffect(() => {
     (async () => {
+      setLoadingData(true);
       try {
-        await fetchProvinces();          // 1) ให้จังหวัดพร้อมก่อน
-        const init = await loadPackage(id!); // 2) โหลดข้อมูลเดิม
+        const [accRes, roomRes] = await Promise.all([fetchAccommodations(), fetchRooms()]);
+        setAccommodations(asArray<any>(accRes.data));
+        setRooms(asArray<any>(roomRes.data));
 
-        // 3) โหลดอำเภอ/ตำบลตามค่าเดิม
-        if (init.province_id) await fetchDistricts(Number(init.province_id));
-        if (init.district_id) await fetchSubdistricts(Number(init.district_id));
+        const fac = await getFacilityById(id!);
+        if (fac.status !== 200 || !fac.data) {
+          messageApi.error(fac.error || "ไม่พบข้อมูลสิ่งอำนวยความสะดวก");
+          navigate("/accommodation/facility");
+          return;
+        }
+        const data = fac.data as any;
 
-        // 4) set ค่าเข้าฟอร์มหลัง options พร้อมแล้ว
-        form.setFieldsValue(init);
-      } catch (e: any) {
-        messageApi.error(e?.message || "โหลดข้อมูลไม่สำเร็จ");
-        setTimeout(() => navigate("/package"), 1200);
+        const initial: FacilityForm = {
+          Type: data.Type ?? data.type,
+          Name: data.Name ?? data.name,
+        };
+        const t = initial.Type;
+        setType(t);
+
+        if (t === "accommodation") {
+          initial.AccommodationID =
+            data.AccommodationID ?? data.accommodation_id ?? data.Accommodation?.ID ?? data.accommodation?.ID;
+        } else if (t === "room") {
+          const roomId = data.RoomID ?? data.room_id ?? data.Room?.ID ?? data.room?.ID;
+          initial.RoomID = roomId;
+
+          let roomAccId =
+            data.AccommodationID ??
+            data.accommodation_id ??
+            data.Accommodation?.ID ??
+            data.accommodation?.ID;
+
+          if (!roomAccId && roomId) {
+            const r = asArray<any>(roomRes.data).find((x) => Number(x.ID ?? x.id) === Number(roomId));
+            roomAccId = r ? getAccIdFromRoom(r) : undefined;
+          }
+          if (roomAccId) {
+            initial.RoomAccommodationID = Number(roomAccId);
+            setAccForRoom(Number(roomAccId));
+          }
+        }
+
+        form.setFieldsValue(initial);
+      } finally {
+        setLoadingData(false);
       }
     })();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [id]);
 
-  // ------- Submit -------
-  const onFinish = async (values: PackageForm) => {
+  const facilityNameOptions =
+    type ? (FACILITY_OPTIONS as any)[type] as Array<{ value: string; label: string }> : [];
+
+  const onFinish = async (values: FacilityForm) => {
     try {
       setSaving(true);
-      const adminId = localStorage.getItem("id");
+      const picked = facilityNameOptions.find((o) => o.value === values.Name);
 
+      // ส่ง snake_case ให้ backend
       const payload = {
-        name: values.name,
-        people: values.people,
-        start_date: values.start_date ? values.start_date.format("YYYY-MM-DD") : undefined,
-        final_date: values.final_date ? values.final_date.format("YYYY-MM-DD") : undefined,
-        price: values.price,
-        guide_id: values.guide_id,
-        province_id: values.province_id,
-        district_id: values.district_id,
-        subdistrict_id: values.subdistrict_id,
-        admin_id: adminId ? parseInt(adminId, 10) : values.admin_id,
+        Name: picked ? picked.label : values.Name,
+        Type: values.Type,
+        accommodation_id:
+          values.Type === "accommodation"
+            ? values.AccommodationID
+            : values.Type === "room"
+            ? values.RoomAccommodationID
+            : null,
+        room_id: values.Type === "room" ? values.RoomID : null,
       };
 
-      const res = await UpdatePackageById(id!, payload);
-      if (res?.status === 200) {
-        messageApi.success(res?.data?.message ?? "บันทึกสำเร็จ");
-        setTimeout(() => navigate("/package"), 800);
+      const res = await updateFacilityById(id!, payload);
+      if (res.status === 200) {
+        messageApi.success(res.data?.message || "บันทึกสำเร็จ");
+        navigate("/accommodation/facility");
       } else {
-        throw new Error(res?.data?.error ?? "บันทึกไม่สำเร็จ");
+        messageApi.error(res.data?.error || "บันทึกไม่สำเร็จ");
       }
-    } catch (e: any) {
-      messageApi.error(e?.message || "เกิดข้อผิดพลาดในการบันทึกข้อมูล");
     } finally {
       setSaving(false);
     }
   };
 
-  // ------- UI -------
   return (
     <div>
       {contextHolder}
-      <Card>
-        <h2>แก้ไขข้อมูลแพ็คเกจ</h2>
-        <Divider />
 
+      <Row gutter={[16, 16]} align="middle" style={{ marginBottom: 24 }}>
+        <Col>
+          <Link to="/accommodation/facility">
+            <Button icon={<ArrowLeftOutlined />} size="large">กลับ</Button>
+          </Link>
+        </Col>
+        <Col flex="auto">
+          <h2 style={{ margin: 0, fontSize: 24, fontWeight: 600 }}>แก้ไขข้อมูลสิ่งอำนวยความสะดวก</h2>
+        </Col>
+      </Row>
+
+      <Alert
+        type="info"
+        showIcon
+        style={{ marginBottom: 24 }}
+        message="คำอธิบาย"
+        description={
+          <>
+            <p><b>ในที่พัก</b> : ต้องเลือกที่พัก</p>
+            <p><b>ในห้องพัก</b> : ต้องเลือก <b>ที่พักของห้อง</b> ก่อน แล้วจึงเลือก <b>ห้องพัก</b></p>
+          </>
+        }
+      />
+
+      <Card style={{ boxShadow: "0 2px 8px rgba(0,0,0,0.1)", borderRadius: 8 }}>
         <Form form={form} layout="vertical" onFinish={onFinish} autoComplete="off">
-          <Row gutter={[16, 0]}>
-            {/* ชื่อแพ็คเกจ */}
-            <Col xs={24} md={12}>
-              <Form.Item
-                label="ชื่อแพ็คเกจ"
-                name="name"
-                rules={[{ required: true, message: "กรุณากรอกชื่อแพ็คเกจ !" }]}
-              >
-                <Input placeholder="เช่น เที่ยวกรุงเทพ" />
-              </Form.Item>
+          <Row gutter={[24, 16]}>
+            <Col span={24}>
+              <Divider orientation="left" style={{ fontSize: 16, fontWeight: 500 }}>
+                ข้อมูลสิ่งอำนวยความสะดวก
+              </Divider>
             </Col>
 
-            {/* จำนวนคน */}
-            <Col xs={24} md={12}>
+            <Col xs={24} sm={12} md={8}>
               <Form.Item
-                label="จำนวนคน"
-                name="people"
-                rules={[{ required: true, message: "กรุณาระบุจำนวนคน !" }]}
-              >
-                <InputNumber min={1} style={{ width: "100%" }} placeholder="เช่น 4" />
-              </Form.Item>
-            </Col>
-
-            {/* ราคา */}
-            <Col xs={24} md={12}>
-              <Form.Item
-                label="ราคา (บาท)"
-                name="price"
-                rules={[{ required: true, message: "กรุณาระบุราคา !" }]}
-              >
-                <InputNumber min={0} style={{ width: "100%" }} placeholder="เช่น 3999" />
-              </Form.Item>
-            </Col>
-
-            {/* ไกด์ */}
-            <Col xs={24} md={12}>
-              <Form.Item
-                label="ไกด์ (guide_id)"
-                name="guide_id"
-                rules={[{ required: true, message: "กรุณาระบุไกด์ !" }]}
-              >
-                <InputNumber min={1} style={{ width: "100%" }} placeholder="เช่น 1" />
-              </Form.Item>
-            </Col>
-
-            {/* วันเริ่ม - วันสิ้นสุด */}
-            <Col xs={24} md={12}>
-              <Form.Item
-                label="วันที่เริ่มต้น"
-                name="start_date"
-                rules={[{ required: true, message: "กรุณาเลือกวันที่เริ่มต้น !" }]}
-              >
-                <DatePicker style={{ width: "100%" }} format="YYYY-MM-DD" />
-              </Form.Item>
-            </Col>
-
-            <Col xs={24} md={12}>
-              <Form.Item
-                label="วันที่สิ้นสุด"
-                name="final_date"
-                rules={[{ required: true, message: "กรุณาเลือกวันที่สิ้นสุด !" }]}
-              >
-                <DatePicker style={{ width: "100%" }} format="YYYY-MM-DD" />
-              </Form.Item>
-            </Col>
-
-            {/* จังหวัด */}
-            <Col xs={24} md={12}>
-              <Form.Item
-                label="จังหวัด"
-                name="province_id"
-                rules={[{ required: true, message: "กรุณาเลือกจังหวัด !" }]}
+                label="ประเภทสิ่งอำนวยความสะดวก"
+                name="Type"
+                rules={[{ required: true, message: "กรุณาเลือกประเภทสิ่งอำนวยความสะดวก" }]}
               >
                 <Select
-                  placeholder="เลือกจังหวัด"
-                  allowClear
-                  showSearch
-                  loading={loadingProvince}
-                  options={toOptions(provinces)}
-                  optionFilterProp="label"
-                  onChange={async (value?: number) => {
-                    // รีเซ็ตอำเภอ/ตำบลเมื่อเปลี่ยนจังหวัด
-                    form.setFieldsValue({ district_id: undefined, subdistrict_id: undefined });
-                    setSubdistricts([]);
-                    if (typeof value === "number") await fetchDistricts(value);
-                    else setDistricts([]);
+                  placeholder="เลือกประเภทสิ่งอำนวยความสะดวก"
+                  size="large"
+                  loading={loadingData}
+                  options={FACILITY_TYPES}
+                  onChange={(v: FacilityForm["Type"]) => {
+                    setType(v);
+                    setAccForRoom(null);
+                    form.setFieldsValue({
+                      Name: undefined,
+                      AccommodationID: undefined,
+                      RoomAccommodationID: undefined,
+                      RoomID: undefined,
+                    });
                   }}
                 />
               </Form.Item>
             </Col>
 
-            {/* อำเภอ */}
-            <Col xs={24} md={12}>
+            <Col xs={24} sm={12} md={8}>
               <Form.Item
-                label="อำเภอ"
-                name="district_id"
-                rules={[{ required: true, message: "กรุณาเลือกอำเภอ !" }]}
+                label="ชื่อสิ่งอำนวยความสะดวก"
+                name="Name"
+                rules={[{ required: true, message: "กรุณาเลือกชื่อสิ่งอำนวยความสะดวก" }]}
               >
                 <Select
-                  placeholder="เลือกอำเภอ"
-                  allowClear
-                  disabled={!provinceIdWatch}
+                  placeholder={type ? "เลือกสิ่งอำนวยความสะดวก" : "กรุณาเลือกประเภทก่อน"}
+                  size="large"
+                  disabled={!type}
                   showSearch
-                  loading={loadingDistrict}
-                  options={toOptions(districts)}
                   optionFilterProp="label"
-                  onChange={async (value?: number) => {
-                    form.setFieldsValue({ subdistrict_id: undefined });
-                    if (typeof value === "number") await fetchSubdistricts(value);
-                    else setSubdistricts([]);
-                  }}
+                  options={facilityNameOptions}
                 />
               </Form.Item>
             </Col>
 
-            {/* ตำบล */}
-            <Col xs={24} md={12}>
-              <Form.Item
-                label="ตำบล"
-                name="subdistrict_id"
-                rules={[{ required: true, message: "กรุณาเลือกตำบล !" }]}
-              >
-                <Select
-                  placeholder="เลือกตำบล"
-                  allowClear
-                  disabled={!districtIdWatch}
-                  showSearch
-                  loading={loadingSubdistrict}
-                  options={toOptions(subdistricts)}
-                  optionFilterProp="label"
-                />
-              </Form.Item>
-            </Col>
+            {/* โหมดที่พัก */}
+            {type === "accommodation" && (
+              <Col xs={24} sm={12} md={8}>
+                <Form.Item
+                  label="เลือกที่พัก"
+                  name="AccommodationID"
+                  rules={[{ required: true, message: "กรุณาเลือกที่พัก" }]}
+                >
+                  <Select
+                    placeholder="เลือกที่พัก"
+                    size="large"
+                    showSearch
+                    optionFilterProp="label"
+                    loading={loadingData}
+                    options={accommodationOptions}
+                  />
+                </Form.Item>
+              </Col>
+            )}
+
+            {/* โหมดห้องพัก */}
+            {type === "room" && (
+              <>
+                <Col xs={24} sm={12} md={8}>
+                  <Form.Item
+                    label="ที่พักของห้อง"
+                    name="RoomAccommodationID"
+                    rules={[{ required: true, message: "กรุณาเลือกที่พักของห้อง" }]}
+                  >
+                    <Select
+                      placeholder="เลือกที่พักก่อน แล้วจึงเลือกห้อง"
+                      size="large"
+                      showSearch
+                      optionFilterProp="label"
+                      loading={loadingData}
+                      options={accommodationOptions}
+                      onChange={(v: number | undefined) => {
+                        setAccForRoom(v ?? null);
+                        form.setFieldsValue({ RoomID: undefined });
+                      }}
+                    />
+                  </Form.Item>
+                </Col>
+
+                <Col xs={24} sm={12} md={8}>
+                  <Form.Item
+                    label="เลือกห้องพัก"
+                    name="RoomID"
+                    rules={[{ required: true, message: "กรุณาเลือกห้องพัก" }]}
+                  >
+                    <Select
+                      placeholder={accForRoom ? "เลือกห้องของที่พักที่เลือก" : "กรุณาเลือกที่พักของห้องก่อน"}
+                      size="large"
+                      disabled={!accForRoom}
+                      showSearch
+                      optionFilterProp="label"
+                      loading={loadingData}
+                      options={roomOptions}
+                    />
+                  </Form.Item>
+                </Col>
+              </>
+            )}
           </Row>
 
-          {/* ปุ่ม */}
-          <Row justify="end">
-            <Col style={{ marginTop: 32 }}>
-              <Form.Item>
-                <Space>
-                  <Link to="/package">
-                    <Button htmlType="button">ยกเลิก</Button>
-                  </Link>
-                  <Button type="primary" htmlType="submit" icon={<PlusOutlined />} loading={saving}>
-                    บันทึก
-                  </Button>
-                </Space>
-              </Form.Item>
+          <Row justify="end" style={{ marginTop: 32 }}>
+            <Col>
+              <Space size="middle">
+                <Link to="/accommodation/facility">
+                  <Button size="large" disabled={saving}>ยกเลิก</Button>
+                </Link>
+                <Button
+                  type="primary"
+                  htmlType="submit"
+                  icon={<SaveOutlined />}
+                  size="large"
+                  loading={saving}
+                >
+                  {saving ? "กำลังบันทึก..." : "บันทึกการแก้ไข"}
+                </Button>
+              </Space>
             </Col>
           </Row>
         </Form>

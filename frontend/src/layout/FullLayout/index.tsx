@@ -26,6 +26,16 @@ import FacilityEdit from "../../pages/Facility/edit";
 import Package from "../../pages/Package";
 import PackageCreate from "../../pages/Package/create";
 import PackageEdit from "../../pages/Package/edit";
+import GuideApplications from "../../pages/Guide/Applications";
+import GuideProfiles from "../../pages/Guide/Profiles";
+import GuideTypes from "../../pages/Guide/Types";
+import GuideLanguages from "../../pages/Guide/Languages";
+import GuideServiceAreas from "../../pages/Guide/ServiceAreas";
+import GuideHistory from "../../pages/Guide/History";
+import GuideReviews from "../../pages/Guide/Reviews";
+import GuideMapping from "../../pages/Guide/Mapping";
+import ProfileRequests from "../../pages/Guide/ProfileRequests";
+
 
 const { Header, Content, Footer, Sider } = Layout;
 
@@ -59,6 +69,7 @@ const FullLayout: React.FC = () => {
     if (path.startsWith("/accommodation")) return "accommodation/list";
     if (path.startsWith("/admin")) return "admin";
     if (path.startsWith("/package")) return "package";
+    if (path.startsWith("/guide")) return "guide/applications";
     return "dashboard";
   }, [path]);
 
@@ -113,6 +124,57 @@ const FullLayout: React.FC = () => {
       icon: <GlobalOutlined />,
       label: <Link to="/package">ข้อมูลแพ็คเกจ</Link>,
       onClick: () => setCurrentPage("package"),
+    },
+    {
+      key: "guide",
+      icon: <UserOutlined />,
+      label: "ข้อมูลไกด์นำเที่ยว",
+      children: [
+        {
+          key: "guide/applications",
+          label: <Link to="/guide/applications">การสมัครไกด์</Link>,
+          onClick: () => setCurrentPage("guide-applications"),
+        },
+        {
+          key: "guide/profiles",
+          label: <Link to="/guide/profiles">โปรไฟล์ไกด์</Link>,
+          onClick: () => setCurrentPage("guide-profiles"),
+        }, {
+          key: "guide/profile-requests",
+          label: <Link to="/guide/profile-requests">คำขอแก้ไขโปรไฟล์</Link>,
+          onClick: () => setCurrentPage("guide-profile-requests"),
+        },
+        {
+          key: "guide/types",
+          label: <Link to="/guide/types">ประเภทไกด์</Link>,
+          onClick: () => setCurrentPage("guide-types"),
+        },
+        {
+          key: "guide/languages",
+          label: <Link to="/guide/languages">ภาษา</Link>,
+          onClick: () => setCurrentPage("guide-languages"),
+        },
+        {
+          key: "guide/service-areas",
+          label: <Link to="/guide/service-areas">พื้นที่บริการ</Link>,
+          onClick: () => setCurrentPage("guide-service-areas"),
+        },
+        {
+          key: "guide/history",
+          label: <Link to="/guide/history">ประวัติการสมัคร</Link>,
+          onClick: () => setCurrentPage("guide-history"),
+        },
+        {
+          key: "guide/reviews",
+          label: <Link to="/guide/reviews">รีวิวไกด์</Link>,
+          onClick: () => setCurrentPage("guide-reviews"),
+        },
+        {
+          key: "guide/mapping",
+          label: <Link to="/guide/mapping">เชื่อมโยงกับแพ็กเกจ</Link>,
+          onClick: () => setCurrentPage("guide-mapping"),
+        },
+      ],
     },
   ];
 
@@ -196,6 +258,17 @@ const FullLayout: React.FC = () => {
               <Route path="/package" element={<Package />} />
               <Route path="/package/create" element={<PackageCreate />} />
               <Route path="/package/edit/:id" element={<PackageEdit />} />
+
+                            {/* เพจใหม่ (Guide) */}
+              <Route path="/guide/applications" element={<GuideApplications />} />
+              <Route path="/guide/profiles" element={<GuideProfiles />} />
+              <Route path="/guide/types" element={<GuideTypes />} />
+              <Route path="/guide/languages" element={<GuideLanguages />} />
+              <Route path="/guide/service-areas" element={<GuideServiceAreas />} />
+              <Route path="/guide/history" element={<GuideHistory />} />
+              <Route path="/guide/reviews" element={<GuideReviews />} />
+              <Route path="/guide/mapping" element={<GuideMapping />} />
+              <Route path="/guide/profile-requests" element={<ProfileRequests />} />
             </Routes>
           </div>
         </Content>

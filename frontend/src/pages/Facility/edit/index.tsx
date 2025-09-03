@@ -1,24 +1,22 @@
-import React, { useState, useEffect } from "react";
+// src/pages/Facility/edit/index.tsx
+import { useEffect, useMemo, useState } from "react";
 import {
-  Space,
-  Button,
-  Col,
   Row,
-  Divider,
-  Form,
+  Col,
   Card,
-  message,
+  Form,
   Select,
+  Button,
+  Space,
   Alert,
-  Spin,
+  message,
+  Divider,
 } from "antd";
 import { SaveOutlined, ArrowLeftOutlined } from "@ant-design/icons";
-import { useNavigate, Link, useParams } from "react-router-dom";
+import { Link, useNavigate, useParams } from "react-router-dom";
 
-
-// API Functions
+// ---------------- basics ----------------
 const apiUrl = "http://localhost:8000";
-
 const getAuthHeaders = () => {
   const token = localStorage.getItem("token");
   const tokenType = localStorage.getItem("token_type");
@@ -27,495 +25,400 @@ const getAuthHeaders = () => {
     ...(token && tokenType ? { Authorization: `${tokenType} ${token}` } : {}),
   };
 };
+const asArray = <T,>(v: any): T[] =>
+  Array.isArray(v) ? v : Array.isArray(v?.data) ? v.data : Array.isArray(v?.items) ? v.items : [];
 
-const getFacilityById = async (id: string) => {
-  try {
-    const response = await fetch(`${apiUrl}/facility/${id}`, {
-      headers: getAuthHeaders(),
-    });
-    const result = await response.json();
-    return { status: response.status, data: result };
-  } catch (error) {
-    console.error("Get facility error:", error);
-    return { status: 500, data: { error: "Network error" } };
-  }
+// ---- APIs ----
+async function fetchFacilityById(id: string) {
+  const res = await fetch(`${apiUrl}/facility/${id}`, { headers: getAuthHeaders() });
+  const json = await res.json().catch(() => ({}));
+  return { status: res.status, data: json?.data ?? json };
+}
+async function updateFacilityById(id: string, body: any) {
+  const res = await fetch(`${apiUrl}/facility/${id}`, {
+    method: "PUT",
+    headers: getAuthHeaders(),
+    body: JSON.stringify(body),
+  });
+  const json = await res.json().catch(() => ({}));
+  return { status: res.status, data: json };
+}
+async function fetchAccommodations() {
+  const res = await fetch(`${apiUrl}/accommodation`, { headers: getAuthHeaders() });
+  const json = await res.json().catch(() => ({}));
+  return { status: res.status, data: json?.data ?? json };
+}
+async function fetchRooms() {
+  // ฝั่ง backend ควร Preload("Accommodation") แล้ว (มีในโค้ดที่ให้ไว้)
+  const res = await fetch(`${apiUrl}/room`, { headers: getAuthHeaders() });
+  const json = await res.json().catch(() => ({}));
+  return { status: res.status, data: json?.data ?? json };
+}
+
+// ---- constant options ----
+const FACILITY_TYPES = [
+  { value: "accommodation", label: "สิ่งอำนวยความสะดวกในที่พัก" },
+  { value: "room", label: "สิ่งอำนวยความสะดวกในห้องพัก" },
+];
+const FACILITY_OPTIONS = {
+  accommodation: [
+    { value: "swimming_pool", label: "สระว่ายน้ำ" },
+    { value: "fitness_center", label: "ห้องออกกำลังกาย" },
+    { value: "restaurant", label: "ร้านอาหาร" },
+    { value: "parking", label: "ที่จอดรถ" },
+    { value: "wifi_lobby", label: "WiFi ในล็อบบี้" },
+    { value: "elevator", label: "ลิฟต์" },
+  ],
+  room: [
+    { value: "air_conditioning", label: "เครื่องปรับอากาศ" },
+    { value: "towel", label: "ผ้าเช็ดตัว" },
+    { value: "hair_dryer", label: "ไดร์เป่าผม" },
+    { value: "wifi", label: "WiFi" },
+    { value: "tv", label: "โทรทัศน์" },
+  ],
 };
 
-const updateFacility = async (id: string, data: any) => {
-  try {
-    const response = await fetch(`${apiUrl}/facility/${id}`, {
-      method: "PUT",
-      headers: getAuthHeaders(),
-      body: JSON.stringify(data),
-    });
-    const result = await response.json();
-    return { status: response.status, data: result };
-  } catch (error) {
-    console.error("Update facility error:", error);
-    return { status: 500, data: { error: "Network error" } };
-  }
+// ---- types (เฉพาะที่ใช้ในหน้า) ----
+type FacilityForm = {
+  Type?: "accommodation" | "room";
+  Name?: string; // ในฟอร์มเก็บเป็น "value" ของ FACILITY_OPTIONS
+  AccommodationID?: number; // ใช้ตอน Type=accommodation
+  RoomAccommodationID?: number; // filter ห้องตามที่พัก (หน้า edit/สร้าง)
+  RoomID?: number; // ใช้ตอน Type=room
 };
 
-const fetchAccommodations = async () => {
-  try {
-    const response = await fetch(`${apiUrl}/accommodation`, {
-      headers: getAuthHeaders(),
-    });
-    if (response.ok) {
-      const data = await response.json();
-      return { status: response.status, data: data.data || data };
-    }
-    return { status: response.status, data: null };
-  } catch (error) {
-    console.error("Fetch accommodations error:", error);
-    return { status: 500, data: null };
-  }
-};
-
-const fetchRooms = async () => {
-  try {
-    const response = await fetch(`${apiUrl}/room`, {
-      headers: getAuthHeaders(),
-    });
-    if (response.ok) {
-      const data = await response.json();
-      return { status: response.status, data: data.data || data };
-    }
-    return { status: response.status, data: null };
-  } catch (error) {
-    console.error("Fetch rooms error:", error);
-    return { status: 500, data: null };
-  }
-};
-
-const FacilityEdit: React.FC = () => {
+export default function FacilityEdit() {
   const navigate = useNavigate();
-  const { id } = useParams<{ id: string }>();
-  const [form] = Form.useForm();
+  const { id = "" } = useParams<{ id: string }>();
+  const [form] = Form.useForm<FacilityForm>();
   const [messageApi, contextHolder] = message.useMessage();
-  const [loading, setLoading] = useState(false);
-  const [fetchLoading, setFetchLoading] = useState(true);
 
-  // States for data
+  // master data
   const [accommodations, setAccommodations] = useState<any[]>([]);
   const [rooms, setRooms] = useState<any[]>([]);
-  const [loadingData, setLoadingData] = useState(false);
 
-  // ประเภทสิ่งอำนวยความสะดวก
-  const FACILITY_TYPES = [
-    { value: "accommodation", label: "สิ่งอำนวยความสะดวกในที่พัก" },
-    { value: "room", label: "สิ่งอำนวยความสะดวกในห้องพัก" },
-  ];
+  // UI states
+  const [saving, setSaving] = useState(false);
+  const [loadingMasters, setLoadingMasters] = useState(false);
+  const [loadingFacility, setLoadingFacility] = useState(false);
 
-  // รายการสิ่งอำนวยความสะดวกแยกตามประเภท
-  const FACILITY_OPTIONS = {
-    accommodation: [
-      { value: "swimming_pool", label: "สระว่ายน้ำ" },
-      { value: "fitness_center", label: "ห้องออกกำลังกาย" },
-      { value: "spa", label: "สปา" },
-      { value: "restaurant", label: "ร้านอาหาร" },
-      { value: "bar", label: "บาร์" },
-      { value: "conference_room", label: "ห้องประชุม" },
-      { value: "business_center", label: "ศูนย์ธุรกิจ" },
-      { value: "parking", label: "ที่จอดรถ" },
-      { value: "garden", label: "สวน" },
-      { value: "playground", label: "สนามเด็กเล่น" },
-      { value: "laundry", label: "บริการซักรีด" },
-      { value: "concierge", label: "บริการคอนเซียร์จ" },
-      { value: "24hr_reception", label: "แผนกต้อนรับ 24 ชั่วโมง" },
-      { value: "wifi_lobby", label: "WiFi ในล็อบบี้" },
-      { value: "elevator", label: "ลิฟต์" },
-    ],
-    room: [
-      { value: "air_conditioning", label: "เครื่องปรับอากาศ" },
-      { value: "bed", label: "เตียง" },
-      { value: "pillow", label: "หมอน" },
-      { value: "blanket", label: "ผ้าห่ม" },
-      { value: "towel", label: "ผ้าเช็ดตัว" },
-      { value: "hair_dryer", label: "ไดร์เป่าผม" },
-      { value: "toothbrush_toothpaste", label: "แปรงสีฟันและยาสีฟัน" },
-      { value: "shampoo", label: "แชมพู" },
-      { value: "soap", label: "สบู่" },
-      { value: "wifi", label: "WiFi" },
-      { value: "tv", label: "โทรทัศน์" },
-      { value: "minibar", label: "มินิบาร์" },
-      { value: "safe", label: "ตู้เซฟ" },
-      { value: "telephone", label: "โทรศัพท์" },
-      { value: "desk", label: "โต๊ะทำงาน" },
-      { value: "chair", label: "เก้าอี้" },
-      { value: "wardrobe", label: "ตู้เสื้อผ้า" },
-      { value: "mirror", label: "กระจกเงา" },
-      { value: "slippers", label: "รองเท้าแตะ" },
-      { value: "bathrobe", label: "เสื้อคลุมอาบน้ำ" },
-      { value: "coffee_tea", label: "กาแฟและชา" },
-      { value: "water_bottle", label: "น้ำดื่ม" },
-      { value: "room_service", label: "บริการรูมเซอร์วิส" },
-      { value: "balcony", label: "ระเบียง" },
-    ],
-  };
+  // ฟิลด์ช่วย
+  const [type, setType] = useState<"accommodation" | "room" | "">("");
+  const [accForRoom, setAccForRoom] = useState<number | null>(null);
 
-  const [selectedType, setSelectedType] = useState<string>("");
-  const [facilityOptions, setFacilityOptions] = useState<Array<{value: string, label: string}>>([]);
+  // เก็บค่า init แล้วค่อย setFieldsValue ใน effect (แก้ warning useForm not connected)
+  const [initValues, setInitValues] = useState<FacilityForm | null>(null);
 
-  // ฟังก์ชันหาค่า value จากชื่อที่แสดง
-  const findValueByLabel = (label: string, type: string) => {
-    const options = FACILITY_OPTIONS[type as keyof typeof FACILITY_OPTIONS] || [];
-    const found = options.find(option => option.label === label);
-    return found ? found.value : label;
-  };
-
-  // โหลดข้อมูลที่พักและห้องพัก
-  const loadData = async () => {
-    setLoadingData(true);
-    try {
-      const [accRes, roomRes] = await Promise.all([
-        fetchAccommodations(),
-        fetchRooms()
-      ]);
-
-      // Set accommodations
-      if (accRes.status === 200 && accRes.data) {
-        const accList = Array.isArray(accRes.data) ? accRes.data : [];
-        setAccommodations(accList);
+  // ---------- load masters ----------
+  useEffect(() => {
+    (async () => {
+      setLoadingMasters(true);
+      try {
+        const [acc, rm] = await Promise.all([fetchAccommodations(), fetchRooms()]);
+        setAccommodations(asArray<any>(acc.data));
+        setRooms(asArray<any>(rm.data));
+      } finally {
+        setLoadingMasters(false);
       }
+    })();
+  }, []);
 
-      // Set rooms
-      if (roomRes.status === 200 && roomRes.data) {
-        const roomList = Array.isArray(roomRes.data) ? roomRes.data : [];
-        setRooms(roomList);
+  // ---------- load facility ----------
+  useEffect(() => {
+    (async () => {
+      setLoadingFacility(true);
+      try {
+        const res = await fetchFacilityById(id);
+        if (res.status !== 200 || !res.data) {
+          messageApi.error("ไม่พบข้อมูลสิ่งอำนวยความสะดวก");
+          setTimeout(() => navigate("/accommodation/facility"), 1200);
+          return;
+        }
+
+        const f = res.data;
+        const Type: "accommodation" | "room" =
+          (f.Type ?? f.type) === "room" ? "room" : "accommodation";
+
+        // หาค่า value ของ FACILITY_OPTIONS จาก label ที่เก็บใน DB (ย้อนกลับ)
+        const opts = FACILITY_OPTIONS[Type];
+        const labelFromDB: string = f.Name ?? f.name ?? "";
+        const matched = opts.find((o) => o.label === labelFromDB);
+
+        // หา AccommodationID ของห้อง (สำหรับ mode room)
+        const roomAccId =
+          f.Room?.AccommodationID ??
+          f.room?.AccommodationID ??
+          f.room?.accommodation_id ??
+          f.room_accommodation_id ??
+          null;
+
+        const initial: FacilityForm = {
+          Type,
+          Name: matched ? matched.value : labelFromDB, // ถ้าไม่เจอให้ใช้ label เดิม
+          AccommodationID:
+            Type === "accommodation"
+              ? (f.AccommodationID ?? f.accommodation_id ?? undefined)
+              : undefined,
+          RoomAccommodationID: Type === "room" ? roomAccId ?? undefined : undefined,
+          RoomID: Type === "room" ? (f.RoomID ?? f.room_id ?? undefined) : undefined,
+        };
+
+        // sync UI states
+        setType(Type);
+        setAccForRoom(initial.RoomAccommodationID ?? null);
+        // ใช้สองจังหวะเพื่อให้ฟอร์มต่อสายก่อน
+        setInitValues(initial);
+      } finally {
+        setLoadingFacility(false);
       }
-    } catch (error) {
-      console.error("Load data error:", error);
-      messageApi.error("เกิดข้อผิดพลาดในการโหลดข้อมูล");
-    } finally {
-      setLoadingData(false);
-    }
-  };
+    })();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [id]);
 
-  // อัพเดตตัวเลือกสิ่งอำนวยความสะดวกเมื่อเลือกประเภท
-  const handleTypeChange = (value: string) => {
-    setSelectedType(value);
-    setFacilityOptions(FACILITY_OPTIONS[value as keyof typeof FACILITY_OPTIONS] || []);
-    // รีเซ็ตค่าเมื่อเปลี่ยนประเภท (ยกเว้นครั้งแรกที่โหลดข้อมูล)
-    if (selectedType !== "") {
-      form.setFieldsValue({ 
-        Name: undefined, 
-        AccommodationID: undefined,
-        RoomID: undefined 
-      });
-    }
-  };
+  // ตั้งค่าฟอร์มหลังต่อสายแล้ว (หลบ warning)
+  useEffect(() => {
+    if (initValues) form.setFieldsValue(initValues);
+  }, [initValues, form]);
 
-  // โหลดข้อมูลสิ่งอำนวยความสะดวกตาม ID
-  const loadFacilityData = async () => {
-    if (!id) {
-      messageApi.error("ไม่พบรหัสสิ่งอำนวยความสะดวก");
-      navigate("/accommodation/facility");
-      return;
-    }
+  // ---------- options ----------
+  const facilityNameOptions = type ? FACILITY_OPTIONS[type] : [];
 
+  const accommodationOptions = useMemo(
+    () =>
+      (accommodations ?? []).map((a: any) => ({
+        value: Number(a.ID ?? a.id),
+        label: a.Name ?? a.name ?? `ที่พัก #${a.ID ?? a.id}`,
+      })),
+    [accommodations]
+  );
+
+  const roomOptions = useMemo(() => {
+    const getAccIdFromRoom = (r: any) =>
+      r.AccommodationID ?? r.accommodation_id ?? r.Accommodation?.ID ?? r.accommodation?.ID;
+    const getAccNameFromRoom = (r: any) =>
+      r.Accommodation?.Name ?? r.accommodation?.Name ?? r.accommodation?.name;
+    return (rooms ?? [])
+      .filter((r: any) => (accForRoom ? getAccIdFromRoom(r) === accForRoom : false))
+      .map((r: any) => ({
+        value: Number(r.ID ?? r.id),
+        label: `${r.Name ?? r.name ?? `ห้อง #${r.ID ?? r.id}`} (${getAccNameFromRoom(r) ?? `ที่พัก #${getAccIdFromRoom(r) ?? "-"}`})`,
+      }));
+  }, [rooms, accForRoom]);
+
+  // ---------- submit ----------
+  const onFinish = async (values: FacilityForm) => {
     try {
-      setFetchLoading(true);
-      const res = await getFacilityById(id);
-      
-      if (res.status === 200 && res.data) {
-        const facilityData = res.data.data || res.data;
-        
-        // กำหนดประเภทและตัวเลือก
-        const type = facilityData.Type;
-        setSelectedType(type);
-        setFacilityOptions(FACILITY_OPTIONS[type as keyof typeof FACILITY_OPTIONS] || []);
-        
-        // หาค่า value ที่ตรงกับชื่อที่แสดง
-        const nameValue = findValueByLabel(facilityData.Name, type);
-        
-        // ตั้งค่าฟอร์ม
-        form.setFieldsValue({
-          Type: type,
-          Name: nameValue,
-          AccommodationID: facilityData.AccommodationID || undefined,
-          RoomID: facilityData.RoomID || undefined,
-        });
-      } else {
-        messageApi.error("ไม่พบข้อมูลสิ่งอำนวยความสะดวก");
-        setTimeout(() => {
-          navigate("/accommodation/facility");
-        }, 2000);
-      }
-    } catch (error) {
-      console.error("Load facility error:", error);
-      messageApi.error("เกิดข้อผิดพลาดในการโหลดข้อมูล");
-      setTimeout(() => {
-        navigate("/accommodation/facility");
-      }, 2000);
-    } finally {
-      setFetchLoading(false);
-    }
-  };
+      setSaving(true);
 
-  const onFinish = async (values: any) => {
-    if (!id) return;
-
-    try {
-      setLoading(true);
-
-      // หาชื่อที่แสดงจากค่าที่เลือก
-      const selectedOption = facilityOptions.find(option => option.value === values.Name);
-      const displayName = selectedOption ? selectedOption.label : values.Name;
-
+      const picked = (facilityNameOptions || []).find((o) => o.value === values.Name);
       const payload = {
-        Name: displayName, // ใช้ชื่อที่แสดงแทน value
+        // backend เก็บเป็น label ภาษาไทย
+        Name: picked ? picked.label : values.Name,
         Type: values.Type,
         accommodation_id: values.Type === "accommodation" ? values.AccommodationID : null,
         room_id: values.Type === "room" ? values.RoomID : null,
       };
 
-      // Validate required fields
       if (!payload.Name || !payload.Type) {
         messageApi.error("กรุณากรอกข้อมูลให้ครบถ้วน");
         return;
       }
-
-      // Validate based on type
       if (payload.Type === "accommodation" && !payload.accommodation_id) {
         messageApi.error("กรุณาเลือกที่พัก");
         return;
       }
-
       if (payload.Type === "room" && !payload.room_id) {
         messageApi.error("กรุณาเลือกห้องพัก");
         return;
       }
 
-      const res = await updateFacility(id, payload);
-      
+      const res = await updateFacilityById(id, payload);
       if (res.status === 200) {
-        messageApi.success(res.data?.message || "แก้ไขข้อมูลสิ่งอำนวยความสะดวกสำเร็จ");
-        setTimeout(() => {
-          navigate("/accommodation/facility");
-        }, 1500);
+        messageApi.success(res.data?.message ?? "บันทึกการแก้ไขสำเร็จ");
+        setTimeout(() => navigate("/accommodation/facility"), 900);
       } else {
-        messageApi.error(res.data?.error || "แก้ไขข้อมูลไม่สำเร็จ");
+        messageApi.error(res.data?.error ?? "บันทึกไม่สำเร็จ");
       }
-    } catch (error) {
-      console.error("Error updating facility:", error);
-      messageApi.error("เกิดข้อผิดพลาดในการแก้ไขข้อมูล");
     } finally {
-      setLoading(false);
+      setSaving(false);
     }
   };
-
-  useEffect(() => {
-    Promise.all([loadData(), loadFacilityData()]);
-  }, [id]);
-
-  if (fetchLoading) {
-    return (
-      <div style={{ textAlign: 'center', padding: '50px' }}>
-        <Spin size="large" />
-        <p style={{ marginTop: '16px' }}>กำลังโหลดข้อมูล...</p>
-      </div>
-    );
-  }
 
   return (
     <div>
       {contextHolder}
-      
-      {/* Header */}
+
       <Row gutter={[16, 16]} align="middle" style={{ marginBottom: 24 }}>
         <Col>
           <Link to="/accommodation/facility">
-            <Button 
-              icon={<ArrowLeftOutlined />}
-              size="large"
-            >
+            <Button icon={<ArrowLeftOutlined />} size="large">
               กลับ
             </Button>
           </Link>
         </Col>
         <Col flex="auto">
-          <h2 style={{ margin: 0, fontSize: '24px', fontWeight: 600 }}>
-            แก้ไขข้อมูลสิ่งอำนวยความสะดวก
-          </h2>
+          <h2 style={{ margin: 0, fontSize: 24, fontWeight: 600 }}>แก้ไขข้อมูลสิ่งอำนวยความสะดวก</h2>
         </Col>
       </Row>
 
-      {/* Information Alert */}
       <Alert
         type="info"
         showIcon
         style={{ marginBottom: 24 }}
         message="คำอธิบาย"
         description={
-          <div>
-            <p><strong>สิ่งอำนวยความสะดวกในที่พัก:</strong> เช่น สระว่ายน้ำ ห้องออกกำลังกาย ร้านอาหาร ที่จอดรถ (ต้องเลือกที่พัก)</p>
-            <p><strong>สิ่งอำนวยความสะดวกในห้องพัก:</strong> เช่น เครื่องปรับอากาศ เตียง ไดร์เป่าผม แปรงสีฟันและยาสีฟัน (ต้องเลือกห้องพัก)</p>
-          </div>
+          <>
+            <p><b>ในที่พัก</b> เช่น สระว่ายน้ำ / ร้านอาหาร (ต้องเลือกที่พัก)</p>
+            <p><b>ในห้องพัก</b> ให้เลือก “ที่พักของห้อง” ก่อน แล้วจึงเลือก “ห้อง” (ชื่อห้องจะโชว์พร้อมชื่อที่พัก)</p>
+          </>
         }
       />
 
-      {/* Warning if no data */}
-      {(accommodations.length === 0 && selectedType === "accommodation") && (
-        <Alert
-          type="warning"
-          showIcon
-          style={{ marginBottom: 16 }}
-          message="ยังไม่มีข้อมูลที่พัก"
-          description="กรุณาไปที่เมนู 'ที่พัก' เพื่อสร้างที่พักก่อน"
-        />
-      )}
+      <Card style={{ boxShadow: "0 2px 8px rgba(0,0,0,0.1)", borderRadius: 8 }}>
+        <Form
+          form={form}
+          layout="vertical"
+          onFinish={onFinish}
+          autoComplete="off"
+        >
+          <Row gutter={[24, 16]}>
+            <Col span={24}>
+              <Divider orientation="left" style={{ fontSize: 16, fontWeight: 500 }}>
+                ข้อมูลสิ่งอำนวยความสะดวก
+              </Divider>
+            </Col>
 
-      {(rooms.length === 0 && selectedType === "room") && (
-        <Alert
-          type="warning"
-          showIcon
-          style={{ marginBottom: 16 }}
-          message="ยังไม่มีข้อมูลห้องพัก"
-          description="กรุณาไปที่เมนู 'ห้อง' เพื่อสร้างห้องพักก่อน"
-        />
-      )}
+            <Col xs={24} sm={12} md={8}>
+              <Form.Item
+                label="ประเภทสิ่งอำนวยความสะดวก"
+                name="Type"
+                rules={[{ required: true, message: "กรุณาเลือกประเภทสิ่งอำนวยความสะดวก" }]}
+              >
+                <Select
+                  placeholder="เลือกประเภทสิ่งอำนวยความสะดวก"
+                  size="large"
+                  options={FACILITY_TYPES}
+                  loading={loadingFacility}
+                  onChange={(v: "accommodation" | "room") => {
+                    setType(v);
+                    setAccForRoom(null);
+                    // reset dependent fields
+                    form.setFieldsValue({
+                      Name: undefined,
+                      AccommodationID: undefined,
+                      RoomAccommodationID: undefined,
+                      RoomID: undefined,
+                    });
+                  }}
+                />
+              </Form.Item>
+            </Col>
 
-      {/* Form Card */}
-      <Card 
-        style={{ 
-          boxShadow: '0 2px 8px rgba(0,0,0,0.1)',
-          borderRadius: '8px'
-        }}
-      >
-        <Spin spinning={loading}>
-          <Form
-            form={form}
-            name="facility-edit"
-            layout="vertical"
-            onFinish={onFinish}
-            autoComplete="off"
-            requiredMark="optional"
-          >
-            <Row gutter={[24, 16]}>
-              {/* Facility Information Section */}
-              <Col span={24}>
-                <Divider orientation="left" style={{ fontSize: '16px', fontWeight: 500 }}>
-                  ข้อมูลสิ่งอำนวยความสะดวก
-                </Divider>
-              </Col>
+            <Col xs={24} sm={12} md={8}>
+              <Form.Item
+                label="ชื่อสิ่งอำนวยความสะดวก"
+                name="Name"
+                rules={[{ required: true, message: "กรุณาเลือกชื่อสิ่งอำนวยความสะดวก" }]}
+              >
+                <Select
+                  placeholder={type ? "เลือกสิ่งอำนวยความสะดวก" : "กรุณาเลือกประเภทก่อน"}
+                  size="large"
+                  disabled={!type}
+                  showSearch
+                  optionFilterProp="label"
+                  loading={loadingFacility}
+                  options={facilityNameOptions}
+                />
+              </Form.Item>
+            </Col>
 
+            {/* mode: accommodation */}
+            {type === "accommodation" && (
               <Col xs={24} sm={12} md={8}>
                 <Form.Item
-                  label="ประเภทสิ่งอำนวยความสะดวก"
-                  name="Type"
-                  rules={[
-                    { required: true, message: "กรุณาเลือกประเภทสิ่งอำนวยความสะดวก" },
-                  ]}
+                  label="เลือกที่พัก"
+                  name="AccommodationID"
+                  rules={[{ required: true, message: "กรุณาเลือกที่พัก" }]}
                 >
-                  <Select 
-                    placeholder="เลือกประเภทสิ่งอำนวยความสะดวก" 
+                  <Select
+                    placeholder="เลือกที่พัก"
                     size="large"
-                    onChange={handleTypeChange}
-                    options={FACILITY_TYPES}
-                  />
-                </Form.Item>
-              </Col>
-
-              <Col xs={24} sm={12} md={8}>
-                <Form.Item
-                  label="ชื่อสิ่งอำนวยความสะดวก"
-                  name="Name"
-                  rules={[
-                    { required: true, message: "กรุณาเลือกชื่อสิ่งอำนวยความสะดวก" },
-                  ]}
-                >
-                  <Select 
-                    placeholder={selectedType ? "เลือกสิ่งอำนวยความสะดวก" : "กรุณาเลือกประเภทก่อน"}
-                    size="large"
-                    disabled={!selectedType}
                     showSearch
                     optionFilterProp="label"
-                    options={facilityOptions}
+                    loading={loadingMasters || loadingFacility}
+                    options={accommodationOptions}
                   />
                 </Form.Item>
               </Col>
+            )}
 
-              {/* เลือกที่พัก - แสดงเมื่อเลือกประเภท accommodation */}
-              {selectedType === "accommodation" && (
+            {/* mode: room */}
+            {type === "room" && (
+              <>
                 <Col xs={24} sm={12} md={8}>
                   <Form.Item
-                    label="เลือกที่พัก"
-                    name="AccommodationID"
-                    rules={[
-                      { required: true, message: "กรุณาเลือกที่พัก" },
-                    ]}
+                    label="ที่พักของห้อง"
+                    name="RoomAccommodationID"
+                    rules={[{ required: true, message: "กรุณาเลือกที่พักของห้อง" }]}
                   >
-                    <Select 
-                      placeholder="เลือกที่พัก"
+                    <Select
+                      placeholder="เลือกที่พักก่อน แล้วจึงเลือกห้อง"
                       size="large"
                       showSearch
                       optionFilterProp="label"
-                      loading={loadingData}
-                      options={accommodations.map(acc => ({
-                        value: acc.ID,
-                        label: acc.Name || `ที่พัก #${acc.ID}`,
-                      }))}
+                      loading={loadingMasters || loadingFacility}
+                      options={accommodationOptions}
+                      onChange={(v: number | undefined) => {
+                        setAccForRoom(v ?? null);
+                        form.setFieldsValue({ RoomID: undefined });
+                      }}
                     />
                   </Form.Item>
                 </Col>
-              )}
 
-              {/* เลือกห้องพัก - แสดงเมื่อเลือกประเภท room */}
-              {selectedType === "room" && (
                 <Col xs={24} sm={12} md={8}>
                   <Form.Item
                     label="เลือกห้องพัก"
                     name="RoomID"
-                    rules={[
-                      { required: true, message: "กรุณาเลือกห้องพัก" },
-                    ]}
+                    rules={[{ required: true, message: "กรุณาเลือกห้องพัก" }]}
                   >
-                    <Select 
-                      placeholder="เลือกห้องพัก"
+                    <Select
+                      placeholder={accForRoom ? "เลือกห้องของที่พักที่เลือก" : "กรุณาเลือกที่พักของห้องก่อน"}
                       size="large"
+                      disabled={!accForRoom}
                       showSearch
                       optionFilterProp="label"
-                      loading={loadingData}
-                      options={rooms.map(room => ({
-                        value: room.ID,
-                        label: room.Name || `ห้อง #${room.ID}`,
-                      }))}
+                      loading={loadingMasters || loadingFacility}
+                      options={roomOptions}
                     />
                   </Form.Item>
                 </Col>
-              )}
-            </Row>
+              </>
+            )}
+          </Row>
 
-            {/* Action Buttons */}
-            <Row justify="end" style={{ marginTop: 32 }}>
-              <Col>
-                <Space size="middle">
-                  <Link to="/accommodation/facility">
-                    <Button 
-                      size="large"
-                      disabled={loading}
-                    >
-                      ยกเลิก
-                    </Button>
-                  </Link>
-                  <Button
-                    type="primary"
-                    htmlType="submit"
-                    icon={<SaveOutlined />}
-                    size="large"
-                    loading={loading}
-                  >
-                    {loading ? "กำลังบันทึก..." : "บันทึกการแก้ไข"}
+          <Row justify="end" style={{ marginTop: 32 }}>
+            <Col>
+              <Space size="middle">
+                <Link to="/accommodation/facility">
+                  <Button size="large" disabled={saving}>
+                    ยกเลิก
                   </Button>
-                </Space>
-              </Col>
-            </Row>
-          </Form>
-        </Spin>
+                </Link>
+                <Button
+                  type="primary"
+                  htmlType="submit"
+                  icon={<SaveOutlined />}
+                  size="large"
+                  loading={saving}
+                >
+                  {saving ? "กำลังบันทึก..." : "บันทึกการแก้ไข"}
+                </Button>
+              </Space>
+            </Col>
+          </Row>
+        </Form>
       </Card>
     </div>
   );
-};
-
-export default FacilityEdit;
+}
