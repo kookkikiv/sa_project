@@ -8,8 +8,8 @@ import (
 
 type GuideApplication struct {
 	gorm.Model
-	MemberID        uint        `gorm:"not null" json:"member_id"`
-	Member        *Member     `gorm:"foreignKey:MemberID"`
+	MemberID uint `gorm:"not null" json:"member_id"`
+	Member *Member `gorm:"foreignKey:MemberID"`
 
 	FirstName     string      `gorm:"not null" json:"first_name"`
 	LastName      string      `gorm:"not null" json:"last_name"`
@@ -18,11 +18,13 @@ type GuideApplication struct {
 	Phone         string      `gorm:"not null" json:"phone"`
 	Email         string      `gorm:"not null" json:"email"`
 
-	Language      string      `json:"language"`
+	LanguageID *uint `gorm:"not null" json:"language_id"`
+	Language Language `gorm:"foreignKey:LanguageID"`
 
-	ServiceAreaID uint        `gorm:"not null;index" json:"service_area_id"`
+	ServiceAreaID *uint        `gorm:"not null;index" json:"service_area_id"`
 	ServiceArea   ServiceArea `gorm:"constraint:OnUpdate:CASCADE,OnDelete:RESTRICT;"`
-    Documents []DocumentPath `json:"documents" gorm:"constraint:OnUpdate:CASCADE,OnDelete:CASCADE;"`
+    DocumentPathID *uint
+    DocumentPath DocumentPath `gorm:"foreignKey:DocumentPathID"`
 
 	SubmittedAt   time.Time   `gorm:"autoCreateTime" json:"submitted_at"` // เซ็ตให้อัตโนมัติ
 }

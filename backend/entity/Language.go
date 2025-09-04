@@ -12,6 +12,7 @@ type Language struct {
 	Name  string    `json:"name"`
 	Description  string    `json:"description"`
 	Guide []Guide `gorm:"many2many:guide_language"`
+	GuideApplication []GuideApplication `gorm:"foreignKey:LanguageID"`
 
 
 }

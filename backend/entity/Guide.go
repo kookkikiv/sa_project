@@ -9,10 +9,10 @@ import (
 
 type Guide struct {
 	gorm.Model
-	GuideSatatus string  `json:"guid_satatus"`
+	GuideStatus string  `json:"guid_status"`
 
-	MemberID *uint
-	Member Member `gorm:"foreignKey:MemberID;references:ID"`
+	MemberID uint `gorm:"not null" json:"member_id"`
+	Member *Member `gorm:"foreignKey:MemberID"`
 
 	GuideApplicationID *uint
 	GuideApplication GuideApplication `gorm:"foreignKey:GuideApplicationID;references:ID"`

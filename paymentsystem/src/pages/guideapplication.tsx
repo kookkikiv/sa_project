@@ -1,6 +1,5 @@
 // GuideRegistration.tsx
-import React, { useState ,useEffect} from "react";
-import { useNavigate } from "react-router-dom";
+import React, { useState, useEffect } from "react";
 import {
   Form,
   Input,
@@ -12,6 +11,8 @@ import {
   Typography,
   Card,
   Space,
+  message,
+  Spin,
 } from "antd";
 import {
   UserOutlined,
@@ -22,24 +23,9 @@ import {
   EnvironmentOutlined,
 } from "@ant-design/icons";
 import { motion } from "framer-motion";
-import bgImage from "../assets/bangkok-thailand.jpg";
-import {
-  GetProvince,
-  GetDistrict,
-} from "../../../frontend/src/services/https";
-type BaseLoc = {
-  ID: number | string;
-  districtNameTh?: string;
-  districtNameEn?: string;
-  provinceNameTh?: string; provinceNameEn?: string;
-  Name?: string; NameTh?: string; NameEn?: string; NameEN?: string;
-  ProvinceName?: string; province_name?: string;
-  DistrictName?: string; district_name?: string;
- 
-};
+import bgImage from "../../assets/bangkok-thailand.jpg";
+import { useNavigate } from "react-router-dom";  // add this import
 
-type Province = BaseLoc;
-type District = BaseLoc & { ProvinceID?: number };
 const { Option } = Select;
 const { Title, Text, Link } = Typography;
 
@@ -47,73 +33,127 @@ const containerVariants = {
   hidden: { opacity: 0, y: 20 },
   visible: { opacity: 1, y: 0, transition: { staggerChildren: 0.1 } },
 };
-const getDisplayName = (o: BaseLoc) =>
-  o?.districtNameTh || o?.districtNameEn ||
-  o?.provinceNameTh || o?.provinceNameEn ||
-  o?.NameTh || o?.NameEN || o?.NameEn || o?.Name ||
-  o?.ProvinceName || o?.province_name ||
-  o?.DistrictName || o?.district_name ||
-  String(o?.ID ?? "");
-
 const itemVariants = { hidden: { opacity: 0, y: 15 }, visible: { opacity: 1, y: 0 } };
-export default function GuideCreate() {
-  const navigate = useNavigate();
-  const [messageApi, contextHolder] = message.useMessage();
 
-  const [provinces, setProvinces] = useState<Province[]>([]);
-  const [districts, setDistricts] = useState<District[]>([]);
-  
+const API_URL = "http://localhost:8080";
 
-  const [loadingProvince, setLoadingProvince] = useState(false);
-  const [loadingDistrict, setLoadingDistrict] = useState(false);
-  
-  const [selectedProvince, setSelectedProvince] = useState<number | null>(null);
-  const [selectedDistrict, setSelectedDistrict] = useState<number | null>(null);
-
-const toOptions = (items: BaseLoc[]) =>
-  (items ?? []).map((it) => ({
-    value: Number(it.ID),
-    label: getDisplayName(it),
-  }));
-
-// --- ป้องกันกรณี API ห่อ data/ items ---
-const asArray = <T,>(val: any): T[] =>
-  Array.isArray(val) ? (val as T[]) :
-  Array.isArray(val?.data) ? (val.data as T[]) :
-  Array.isArray(val?.items) ? (val.items as T[]) :
-  [];
-
-  // ------- Fetchers -------
-  const fetchProvinces = async () => {
-    setLoadingProvince(true);
-    try {
-      const res = await GetProvince();
-      setProvinces(asArray<Province>(res?.data));
-    } catch {
-      setProvinces([]);
-      messageApi.error("โหลดรายชื่อจังหวัดไม่สำเร็จ");
-    } finally {
-      setLoadingProvince(false);
-    }
-  };
-
-  const fetchDistricts = async (provinceId: number) => {
-    setLoadingDistrict(true);
-    try {
-      const res = await GetDistrict(provinceId);
-      setDistricts(asArray<District>(res?.data));
-    } catch {
-      setDistricts([]);
-      messageApi.error("โหลดรายชื่ออำเภอไม่สำเร็จ");
-    } finally {
-      setLoadingDistrict(false);
-    }
-  };
 const GuideRegistration: React.FC = () => {
   const [form] = Form.useForm();
   const [lightMode, setLightMode] = useState(false);
+  const navigate = useNavigate();
+  const [guideTypes, setGuideTypes] = useState<{ id: number; name: string }[]>([]);
+  const [provinces, setProvinces] = useState<{ id: number; name: string }[]>([]);
+  const [languages, setLanguages] = useState<{ id: number; name: string }[]>([]);
+  const [districts, setDistricts] = useState<{ id: number; district: string }[]>([]);
+  const [selectedProvinceId, setSelectedProvinceId] = useState<number | null>(null);
+  const [fileList, setFileList] = useState<any[]>([]);
+  const [loadingGuideTypes, setLoadingGuideTypes] = useState(true);
+  const [loadingProvinces, setLoadingProvinces] = useState(true);
+  const [loadingDistricts, setLoadingDistricts] = useState(false);
+  const [loadingLanguages, setLoadingLanguages] = useState(true);
 
-  const onFinish = (values: any) => console.log("Form values:", values);
+  // Fetch guide types
+  useEffect(() => {
+    fetch(`${API_URL}/guide-types`)
+      .then((res) => res.json())
+      .then((data) => setGuideTypes(data.map((gt: any) => ({ id: gt.ID, name: gt.name }))))
+      .finally(() => setLoadingGuideTypes(false));
+  }, []);
+
+  // Fetch provinces
+  useEffect(() => {
+    fetch(`${API_URL}/provinces`)
+      .then((res) => res.json())
+      .then((data) => setProvinces(data.map((p: any) => ({ id: p.ID, name: p.name }))))
+      .finally(() => setLoadingProvinces(false));
+  }, []);
+
+  useEffect(() => {
+    fetch(`${API_URL}/languages`)
+      .then((res) => res.json())
+      .then((data) => setLanguages(data.map((l: any) => ({ id: l.ID, name: l.name }))))
+      .finally(() => setLoadingLanguages(false));
+  }, []);
+
+  // Fetch districts when province changes
+  useEffect(() => {
+    if (!selectedProvinceId) {
+      setDistricts([]);
+      return;
+    }
+    setLoadingDistricts(true);
+    fetch(`${API_URL}/service-areas/${selectedProvinceId}`)
+      .then((res) => res.json())
+      .then((data) =>
+        setDistricts(data.map((d: any) => ({ id: d.ID, district: d.District || d.district })))
+      )
+      .finally(() => setLoadingDistricts(false));
+  }, [selectedProvinceId]);
+
+  const handleUpload = (file: any) => {
+    setFileList([file]);
+    return false;
+  };
+
+  const onFinish = async (values: any) => {
+    try {
+      if (!selectedProvinceId) {
+        message.error("Please select a province.");
+        return;
+      }
+
+      const serviceArea = districts.find((d) => d.id === values.district);
+      if (!serviceArea) {
+        message.error("Please select a valid district.");
+        return;
+      }
+
+      let documentPath = "";
+      if (fileList.length > 0) {
+        const formData = new FormData();
+        formData.append("file", fileList[0]);
+        const uploadRes = await fetch(`${API_URL}/documents/upload`, {
+          method: "POST",
+          body: formData,
+        });
+        const uploadData = await uploadRes.json();
+        if (!uploadRes.ok) throw new Error(uploadData.error || "Upload failed");
+        documentPath = uploadData.data.DocumentPath;
+      }
+
+      const payload = {
+        first_name: values.firstName,
+        last_name: values.lastName,
+        age: Number(values.age),
+        sex: values.gender,
+        phone: values.phone,
+        email: values.email,
+        language_id: Number(values.language),
+        guide_type_id: values.guideTypeId,
+        service_area_id: serviceArea.id,
+        documents_path: documentPath,
+        user_id: 1, // temporary since you have no login
+      };
+
+      const res = await fetch(`${API_URL}/guide-applications`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(payload),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || "Submit failed");
+
+      message.success("Application submitted successfully!");
+      form.resetFields();
+      setFileList([]);
+      setSelectedProvinceId(null);
+      navigate(`/waiting-approval/${data.id}`);
+
+    } catch (err: any) {
+      console.error(err);
+      message.error(err.message || "Failed to submit application.");
+    }
+  };
 
   return (
     <div
@@ -122,20 +162,14 @@ const GuideRegistration: React.FC = () => {
         backgroundImage: `url(${bgImage})`,
         backgroundSize: "cover",
         backgroundPosition: "center",
-        backgroundRepeat: "no-repeat",
         display: "flex",
         alignItems: "center",
         justifyContent: "center",
         padding: "40px 16px",
       }}
-      onClick={() => setLightMode(true)} // click background to lighten entire card
+      onClick={() => setLightMode(true)}
     >
-      <motion.div
-        variants={containerVariants}
-        initial="hidden"
-        animate="visible"
-        style={{ width: "100%", maxWidth: 960 }}
-      >
+      <motion.div variants={containerVariants} initial="hidden" animate="visible" style={{ width: "100%", maxWidth: 960 }}>
         <motion.div
           whileHover={{ scale: 1.02, boxShadow: "0 12px 40px rgba(0,0,0,0.15)" }}
           animate={{
@@ -144,31 +178,11 @@ const GuideRegistration: React.FC = () => {
           }}
           transition={{ duration: 0.3 }}
           style={{ borderRadius: 24 }}
-          onClick={(e) => {
-            e.stopPropagation(); // prevent triggering background click
-            setLightMode(false); // click card to restore normal
-          }}
+          onClick={(e) => { e.stopPropagation(); setLightMode(false); }}
         >
-          <Card
-            bordered={false}
-            style={{
-              borderRadius: 24,
-              boxShadow: "0 8px 30px rgba(0,0,0,0.1)",
-              padding: "32px 28px",
-              backgroundColor: "transparent", // motion.div handles color
-            }}
-          >
-            {/* Title */}
+          <Card bordered={false} style={{ borderRadius: 24, boxShadow: "0 8px 30px rgba(0,0,0,0.1)", padding: "32px 28px", backgroundColor: "transparent" }}>
             <motion.div variants={itemVariants}>
-              <Title
-                level={2}
-                style={{
-                  textAlign: "center",
-                  marginBottom: 32,
-                  fontWeight: 700,
-                  color: "#1890ff",
-                }}
-              >
+              <Title level={2} style={{ textAlign: "center", marginBottom: 32, fontWeight: 700, color: "#1890ff" }}>
                 🧭 Guide Registration
               </Title>
             </motion.div>
@@ -176,136 +190,104 @@ const GuideRegistration: React.FC = () => {
             <Form form={form} layout="vertical" onFinish={onFinish} size="large">
               {/* Personal Info */}
               <motion.div variants={itemVariants}>
-                <Title level={4}>
-                  <IdcardOutlined /> Personal Information
-                </Title>
+                <Title level={4}><IdcardOutlined /> Personal Information</Title>
               </motion.div>
 
               <Row gutter={16}>
                 <Col span={12}>
-                  <motion.div variants={itemVariants}>
-                    <Form.Item
-                      label="First Name"
-                      name="firstName"
-                      rules={[{ required: true }]}
-                      extra="As on your legal documents"
-                    >
-                      <Input placeholder="Enter first name" prefix={<UserOutlined />} />
-                    </Form.Item>
-                  </motion.div>
+                  <Form.Item label="First Name" name="firstName" rules={[{ required: true }]}>
+                    <Input placeholder="Enter first name" prefix={<UserOutlined />} />
+                  </Form.Item>
                 </Col>
                 <Col span={12}>
-                  <motion.div variants={itemVariants}>
-                    <Form.Item label="Last Name" name="lastName" rules={[{ required: true }]}>
-                      <Input placeholder="Enter last name" prefix={<UserOutlined />} />
-                    </Form.Item>
-                  </motion.div>
+                  <Form.Item label="Last Name" name="lastName" rules={[{ required: true }]}>
+                    <Input placeholder="Enter last name" prefix={<UserOutlined />} />
+                  </Form.Item>
                 </Col>
               </Row>
 
-              {/* Age & Gender */}
               <Row gutter={16}>
                 <Col span={12}>
-                  <motion.div variants={itemVariants}>
-                    <Form.Item label="Age" name="age" rules={[{ required: true }]}>
-                      <Input type="number" placeholder="Enter age" />
-                    </Form.Item>
-                  </motion.div>
+                  <Form.Item label="Age" name="age" rules={[{ required: true }]}>
+                    <Input type="number" placeholder="Enter age" />
+                  </Form.Item>
                 </Col>
                 <Col span={12}>
-                  <motion.div variants={itemVariants}>
-                    <Form.Item label="Gender" name="gender" rules={[{ required: true }]}>
-                      <Select placeholder="Select gender">
-                        <Option value="male">Male</Option>
-                        <Option value="female">Female</Option>
-                        <Option value="other">Other</Option>
-                      </Select>
-                    </Form.Item>
-                  </motion.div>
+                  <Form.Item label="Gender" name="gender" rules={[{ required: true }]}>
+                    <Select placeholder="Select gender">
+                      <Option value="male">Male</Option>
+                      <Option value="female">Female</Option>
+                      <Option value="other">Other</Option>
+                    </Select>
+                  </Form.Item>
                 </Col>
               </Row>
 
-              {/* Phone & Email */}
               <Row gutter={16}>
                 <Col span={12}>
-                  <motion.div variants={itemVariants}>
-                    <Form.Item label="Phone" name="phone" rules={[{ required: true }]}>
-                      <Input placeholder="+66 8X-XXX-XXXX" prefix={<PhoneOutlined />} />
-                    </Form.Item>
-                  </motion.div>
+                  <Form.Item label="Phone" name="phone" rules={[{ required: true }]}>
+                    <Input placeholder="+66 8X-XXX-XXXX" prefix={<PhoneOutlined />} />
+                  </Form.Item>
                 </Col>
                 <Col span={12}>
-                  <motion.div variants={itemVariants}>
-                    <Form.Item
-                      label="Email"
-                      name="email"
-                      rules={[{ required: true, type: "email" }]}
-                    >
-                      <Input placeholder="Enter email" prefix={<MailOutlined />} />
-                    </Form.Item>
-                  </motion.div>
+                  <Form.Item label="Email" name="email" rules={[{ required: true, type: "email" }]}>
+                    <Input placeholder="Enter email" prefix={<MailOutlined />} />
+                  </Form.Item>
                 </Col>
               </Row>
 
               {/* Guide Details */}
               <motion.div variants={itemVariants}>
-                <Title level={4} style={{ marginTop: 24 }}>
-                  <EnvironmentOutlined /> Guide Details
-                </Title>
+                <Title level={4} style={{ marginTop: 24 }}><EnvironmentOutlined /> Guide Details</Title>
               </motion.div>
 
               <Row gutter={16}>
                 <Col span={12}>
-                  <motion.div variants={itemVariants}>
-                    <Form.Item
-                      label="Guide Type"
-                      name="GT"
-                      rules={[{ required: true, message: "Please select a guide type" }]}
-                    >
+                  <Form.Item label="Guide Type" name="guideTypeId" rules={[{ required: true }]}>
+                    {loadingGuideTypes ? <Spin /> : (
                       <Select placeholder="Select guide type">
-                        <Option value="general">General Guide</Option>
-                        <Option value="local">Local Guide</Option>
+                        {guideTypes.map(gt => <Option key={gt.id} value={gt.id}>{gt.name}</Option>)}
                       </Select>
-                    </Form.Item>
-                  </motion.div>
+                    )}
+                  </Form.Item>
+                </Col>
+                <Col span={12}>
+                  <Form.Item label="Province" name="provinceId" rules={[{ required: true }]}>
+                    {loadingProvinces ? <Spin /> : (
+                      <Select placeholder="Select province" onChange={(value) => setSelectedProvinceId(value)}>
+                        {provinces.map(p => <Option key={p.id} value={p.id}>{p.name}</Option>)}
+                      </Select>
+                    )}
+                  </Form.Item>
                 </Col>
               </Row>
 
               <Row gutter={16}>
                 <Col span={12}>
-                  <motion.div variants={itemVariants}>
-                    <Form.Item
-                      label="Province"
-                      name="ProvinceID"
-                      rules={[{ required: true, message: "Please select a Province" }]}
-                    >
-                      <Select placeholder="Select Province">
-
+                  <Form.Item label="District" name="district" rules={[{ required: true }]}>
+                    {loadingDistricts ? <Spin /> : (
+                      <Select placeholder="Select district">
+                        {districts.map(d => <Option key={d.id} value={d.id}>{d.district}</Option>)}
                       </Select>
-                    </Form.Item>
-                  </motion.div>
+                    )}
+                  </Form.Item>
                 </Col>
                 <Col span={12}>
-                  <motion.div variants={itemVariants}>
-                    <Form.Item
-                      label="District"
-                      name="DT"
-                      rules={[{ required: true, message: "Please select a District" }]}
-                    >
-                      <Select placeholder="Select District">
-                        <Option value="district1">District 1</Option>
-                        <Option value="district2">District 2</Option>
+                  <Form.Item label="Language" name="language" rules={[{ required: true }]}>
+                    {loadingLanguages ? <Spin /> : (
+                      <Select placeholder="Select language">
+                        {languages.map(l => <Option key={l.id} value={l.id}>{l.name}</Option>)}
                       </Select>
-                    </Form.Item>
-                  </motion.div>
+                    )}
+                  </Form.Item>
                 </Col>
               </Row>
 
+              
+
               {/* Documents */}
               <motion.div variants={itemVariants}>
-                <Title level={4} style={{ marginTop: 24 }}>
-                  📑 Documents
-                </Title>
+                <Title level={4} style={{ marginTop: 24 }}>📑 Documents</Title>
               </motion.div>
 
               <motion.div variants={itemVariants}>
@@ -313,12 +295,9 @@ const GuideRegistration: React.FC = () => {
                   <Space direction="vertical" style={{ width: "100%" }}>
                     <Text type="secondary">
                       You can see information&nbsp;
-                      <Link href="/documents-info" target="_blank">
-                        here
-                      </Link>
-                      .
+                      <Link href="/documents-info" target="_blank">here</Link>.
                     </Text>
-                    <Upload beforeUpload={() => false}>
+                    <Upload fileList={fileList} beforeUpload={handleUpload} onRemove={() => setFileList([])}>
                       <Button icon={<UploadOutlined />}>Click to Upload</Button>
                     </Upload>
                   </Space>
@@ -327,21 +306,13 @@ const GuideRegistration: React.FC = () => {
 
               <motion.div variants={itemVariants} style={{ marginTop: 24 }}>
                 <motion.div whileHover={{ scale: 1.03 }} whileTap={{ scale: 0.97 }}>
-                  <Button
-                    type="primary"
-                    htmlType="submit"
-                    block
-                    size="large"
-                    style={{
-                      borderRadius: 12,
-                      fontWeight: 600,
-                      boxShadow: "0 6px 18px rgba(24, 144, 255, 0.4)",
-                    }}
-                  >
+                  <Button type="primary" htmlType="submit" block size="large"
+                    style={{ borderRadius: 12, fontWeight: 600, boxShadow: "0 6px 18px rgba(24, 144, 255, 0.4)" }}>
                     Submit Application
                   </Button>
                 </motion.div>
               </motion.div>
+
             </Form>
           </Card>
         </motion.div>
@@ -351,4 +322,3 @@ const GuideRegistration: React.FC = () => {
 };
 
 export default GuideRegistration;
-}

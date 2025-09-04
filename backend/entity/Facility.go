@@ -12,10 +12,9 @@ type Facility struct {
     
     // เพิ่ม Direct FK
     AccommodationID *uint `json:"accommodation_id"`
-    RoomID         *uint `json:"room_id"`
-    
-    // Relationships
     Accommodation  Accommodation `gorm:"foreignKey:AccommodationID"`
+    
+    RoomID         *uint `json:"room_id"`
     Room          Room          `gorm:"foreignKey:RoomID"`
     
     // Many-to-many (รักษาไว้เพื่อ backward compatibility)

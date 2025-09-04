@@ -19,6 +19,9 @@ type Accommodation struct {
 	AdminID *uint `json:"admin_id"`
 	Admin   Admin `gorm:"foreignKey:AdminID"`
 
+	LocationID *uint    `json:"location_id"`
+	Location   Location `gorm:"foreignKey:LocationID;references:ID"`
+
 	Rooms        []Room       `gorm:"foreignKey:AccommodationID"`
 	Facilities   []Facility   `gorm:"many2many:accommodation_facility"`
 	Packages     []Package    `gorm:"many2many:accommodation_package"`

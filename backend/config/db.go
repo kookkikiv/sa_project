@@ -38,29 +38,57 @@ func ConnectionDB() {
 
 
 func SetupDatabase() {
-	// ลำดับที่อ้าง FK ไปหาตารางที่มาก่อน
-	if err := db.AutoMigrate(
-		&entity.Province{},
-		&entity.District{},
-		&entity.Subdistrict{},
-		&entity.ServiceArea{},
-		&entity.Admin{},
-		&entity.Member{},
-		&entity.Guide{},
-		&entity.GuideType{},
-		&entity.GuideApplication{},
-		&entity.Language{},
-		&entity.Accommodation{},
-		&entity.Room{},
-		&entity.Facility{},
-		&entity.Package{},
-		&entity.PackageStay{}, 
-		&entity.Event{},
-		&entity.Picture{},
-		&entity.DocumentPath{},
-	); err != nil {
-		panic(err)
-	}
+db.Exec("PRAGMA foreign_keys = ON;")
+
+    if err := db.AutoMigrate(
+        // ===== พื้นที่/พจนานุกรม (แม่ของหลายตัว) =====
+        &entity.Province{}, &entity.District{}, &entity.Subdistrict{}, &entity.Location{},
+        &entity.Language{},              // สำหรับ Guide<->Language (m2m)
+        &entity.GuideType{},             // ต้องมาก่อน ServiceArea
+        &entity.EventType{},             // ถ้ามี FK ใน Event
+        &entity.PaymentType{},           // ถ้ามี FK ใน Paymentdetail
+        &entity.ApplicationStatus{},     // ถ้าใช้ใน GuideApplication / History
+
+        // ===== โครง Service =====
+        &entity.ServiceArea{},           // อ้าง Province/District/GuideType
+
+        // ===== ผู้ใช้/แอดมิน =====
+        &entity.Admin{}, &entity.Member{},
+
+        // ===== ใบสมัครไกด์ =====
+        &entity.GuideApplication{},      // ต้องมาก่อน Guide
+        &entity.ApplicationHistory{},    // ถ้ามี FK ไปที่ GuideApplication
+
+        // ===== ไกด์ =====
+        &entity.Guide{},                 // อ้าง Member/GuideApplication + m2m: Language/ServiceArea/GuideType
+
+        // ===== ที่พักและสิ่งอำนวยความสะดวก =====
+        &entity.Accommodation{}, &entity.Room{}, &entity.Facility{},
+
+        // ===== อีเวนต์/รายการ/รูปภาพ =====
+        &entity.Event{},                 // ถ้าอ้าง Location/Province ให้มาหลัง Location
+        &entity.Item{}, &entity.ItemLocation{}, // ถ้า ItemLocation เป็นตารางจริง (ไม่ใช่ join)
+        &entity.Picture{},               // polymorphic: Owner
+
+        // ===== แพ็กเกจและความสัมพันธ์ =====
+        &entity.Package{}, &entity.PackageStay{}, &entity.EventPackage{},
+
+        // ===== การจอง/ตะกร้า/ชำระเงิน =====
+        &entity.Cart{}, &entity.CartItems{},
+        &entity.Reservation{}, &entity.ReservationHistory{}, // ถ้ามี
+        &entity.Booking{}, &entity.BookingDetail{}, &entity.BookingItem{},
+        &entity.Paymentdetail{}, // ชื่อ struct ของนายสะกดตามไฟล์ ถ้ามี
+        &entity.Receipt{},
+
+        // ===== อื่น ๆ =====
+        &entity.Review{}, &entity.ReviewBooking{}, &entity.ReviewImage{},
+        &entity.WishList{}, &entity.Notification{},
+
+        // ===== เอกสารแนบ =====
+        &entity.DocumentPath{}, // หรือ DocumentFile ตามแบบที่คุยไว้
+    ); err != nil {
+        panic(err)
+    }
 
 	// seed admin แบบง่าย
 	hashedPassword, _ := HashPassword("123456")

@@ -17,14 +17,22 @@ type Event struct {
     AdminID *uint `json:"admin_id"`
     Admin   Admin `gorm:"foreignKey:AdminID;references:ID"`
 
-    // === เพิ่ม 3 FK ด้านล่าง ให้ตรงกับ Province.Events / District.Events / Subdistrict.Event ===
+    EventTypeID     uint      		`json:"event_type_id"`
+    EventType     	*EventType      `gorm:"foreignKey:EventTypeID" json:"event_type"`
+
+    LocationID *uint    `json:"location_id"`
+   Location   Location `gorm:"foreignKey:LocationID;references:ID"`
     ProvinceID    *uint      `json:"province_id"`
     Province      Province   `gorm:"foreignKey:ProvinceID;references:ID"`
     DistrictID    *uint      `json:"district_id"`
     District      District   `gorm:"foreignKey:DistrictID;references:ID"`
     SubdistrictID *uint      `json:"subdistrict_id"`
     Subdistrict   Subdistrict`gorm:"foreignKey:SubdistrictID;references:ID"`
+    ReservationID *uint
+	Reservation   Reservation `gorm:"foriegnKey:RerservationID"`
 
     // ความสัมพันธ์อื่น
     Packages []Package `gorm:"many2many:event_package"`
+    Item []Item `gorm:"foreignKey:EventID"`
+	CartItem []CartItems `gorm:"foreignKey:EventID"`
 }
