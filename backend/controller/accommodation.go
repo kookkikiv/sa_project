@@ -2,184 +2,168 @@ package controller
 
 import (
 	"net/http"
+	"strings"
 
 	"github.com/gin-gonic/gin"
 	"github.com/kookkikiv/sa_project/backend/config"
 	"github.com/kookkikiv/sa_project/backend/entity"
 )
 
-/* ===== helpers สำหรับรูปภาพแบบสั้น ๆ ===== */
-
-func createAccommodationPictures(accID uint, urls []string) error {
-	if len(urls) == 0 {
-		return nil
-	}
-	pics := make([]entity.Picture, 0, len(urls))
-	for _, u := range urls {
-		if u == "" {
-			continue
-		}
-		pics = append(pics, entity.Picture{
-			Url:             u,
-			
-		})
-	}
-	if len(pics) == 0 {
-		return nil
-	}
-	return config.DB().Create(&pics).Error
+// ==================== สร้างโครง DTO ====================
+type AccommodationCreateReq struct {
+	Name          string   `json:"name"`
+	Type          string   `json:"type"`
+	Status        string   `json:"status"`
+	ProvinceID    uint     `json:"province_id"`
+	DistrictID    uint     `json:"district_id"`
+	SubdistrictID uint     `json:"subdistrict_id"`
+	AdminID       uint     `json:"admin_id"`
+	PictureURLs   []string `json:"picture_urls"`
 }
 
-func replaceAccommodationPictures(accID uint, urls []string) error {
-	db := config.DB()
-	if err := db.Where("accommodation_id = ?", accID).Delete(&entity.Picture{}).Error; err != nil {
-		return err
-	}
-	return createAccommodationPictures(accID, urls)
+type AccommodationUpdateReq struct {
+	Name          *string   `json:"name"`
+	Type          *string   `json:"type"`
+	Status        *string   `json:"status"`
+	ProvinceID    *uint     `json:"province_id"`
+	DistrictID    *uint     `json:"district_id"`
+	SubdistrictID *uint     `json:"subdistrict_id"`
+	AdminID       *uint     `json:"admin_id"`
+	PictureURLs   *[]string `json:"picture_urls"`
 }
 
-/* ====== payload (เพิ่มช่อง picture_urls) ====== */
-
-type accommodationCreateReq struct {
-	entity.Accommodation
-	PictureURLs []string `json:"picture_urls"`
-}
-
-type accommodationUpdateReq struct {
-	entity.Accommodation
-	PictureURLs *[]string `json:"picture_urls"`
-}
-
-/* ================== คงฟังก์ชันเดิมไว้ แต่เติมรูป ================== */
-
-// GET /accommodation
+// ==================== ดึงที่พักทั้งหมด ====================
 func FindAccommodation(c *gin.Context) {
-	var items []entity.Accommodation
-	if err := config.DB().
-		Preload("Province").
-		Preload("District").
-		Preload("Subdistrict").
-		Preload("Pictures"). // << เพิ่ม preload รูป
-		Find(&items).Error; err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+	var acc []entity.Accommodation
+	if err := config.DB().Preload("Pictures").Find(&acc).Error; err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "database error"})
 		return
 	}
-	c.JSON(http.StatusOK, gin.H{"data": items})
+	c.JSON(http.StatusOK, gin.H{"data": acc})
 }
 
-// GET /accommodation/:id
+// ==================== ดึงที่พักตาม id ====================
 func FindAccommodationId(c *gin.Context) {
-	var item entity.Accommodation
 	id := c.Param("id")
-
-	if err := config.DB().
-		Preload("Province").
-		Preload("District").
-		Preload("Subdistrict").
-		Preload("Pictures"). // << เพิ่ม preload รูป
-		Where("id = ?", id).First(&item).Error; err != nil {
+	var acc entity.Accommodation
+	if err := config.DB().Preload("Pictures").First(&acc, id).Error; err != nil {
 		c.JSON(http.StatusNotFound, gin.H{"error": "accommodation not found"})
 		return
 	}
-	c.JSON(http.StatusOK, gin.H{"data": item})
+	c.JSON(http.StatusOK, gin.H{"data": acc})
 }
 
-// POST /accommodation
+// ==================== สร้างที่พักใหม่ ====================
 func CreateAccommodation(c *gin.Context) {
-	var req accommodationCreateReq
+	var req AccommodationCreateReq
 	if err := c.ShouldBindJSON(&req); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "Bad request body: " + err.Error()})
+		c.JSON(http.StatusBadRequest, gin.H{"error": "bad request"})
 		return
 	}
 
-	// สร้างที่พัก
-	if err := config.DB().Create(&req.Accommodation).Error; err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to create accommodation: " + err.Error()})
+	acc := entity.Accommodation{
+		Name:          strings.TrimSpace(req.Name),
+		Type:          req.Type,
+		Status:        req.Status,
+		ProvinceID:    &req.ProvinceID,
+		DistrictID:    &req.DistrictID,
+		SubdistrictID: &req.SubdistrictID,
+		AdminID:       &req.AdminID,
+	}
+
+	if err := config.DB().Create(&acc).Error; err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "cannot create accommodation"})
 		return
 	}
 
-	// แนบรูป (ถ้ามี)
-	if err := createAccommodationPictures(req.Accommodation.ID, req.PictureURLs); err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to attach pictures: " + err.Error()})
-		return
+	// แนบรูป (ง่ายๆ: loop แล้ว insert)
+	for _, url := range req.PictureURLs {
+		pic := entity.Picture{
+			Url:       url,
+			OwnerType: "accommodation",
+			OwnerID:   acc.ID,
+		}
+		config.DB().Create(&pic)
 	}
 
-	// โหลดพร้อม relations
-	config.DB().
-		Preload("Province").
-		Preload("District").
-		Preload("Subdistrict").
-		Preload("Pictures").
-		First(&req.Accommodation, req.Accommodation.ID)
-
-	c.JSON(http.StatusCreated, gin.H{"data": req.Accommodation, "message": "Accommodation created successfully"})
+	c.JSON(http.StatusCreated, gin.H{"data": acc, "message": "created"})
 }
 
-// PUT /accommodation/:id
+// ==================== อัปเดตที่พัก ====================
 func UpdateAccommodationById(c *gin.Context) {
-	var item entity.Accommodation
 	id := c.Param("id")
-
-	if err := config.DB().Where("id = ?", id).First(&item).Error; err != nil {
-		c.JSON(http.StatusNotFound, gin.H{"error": "Accommodation not found"})
+	var acc entity.Accommodation
+	if err := config.DB().First(&acc, id).Error; err != nil {
+		c.JSON(http.StatusNotFound, gin.H{"error": "not found"})
 		return
 	}
 
-	var req accommodationUpdateReq
+	var req AccommodationUpdateReq
 	if err := c.ShouldBindJSON(&req); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "Bad request body: " + err.Error()})
+		c.JSON(http.StatusBadRequest, gin.H{"error": "bad request"})
 		return
 	}
 
-	// อัปเดตฟิลด์ของที่พัก (ตามสไตล์เดิม)
-	if err := config.DB().Model(&item).Updates(&req.Accommodation).Error; err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to update accommodation: " + err.Error()})
+	// update field ถ้าส่งมา
+	if req.Name != nil {
+		acc.Name = *req.Name
+	}
+	if req.Type != nil {
+		acc.Type = *req.Type
+	}
+	if req.Status != nil {
+		acc.Status = *req.Status
+	}
+	if req.ProvinceID != nil {
+		acc.ProvinceID = req.ProvinceID
+	}
+	if req.DistrictID != nil {
+		acc.DistrictID = req.DistrictID
+	}
+	if req.SubdistrictID != nil {
+		acc.SubdistrictID = req.SubdistrictID
+	}
+	if req.AdminID != nil {
+		acc.AdminID = req.AdminID
+	}
+
+	if err := config.DB().Save(&acc).Error; err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "update failed"})
 		return
 	}
 
-	// ถ้ามี picture_urls ให้แทนที่รูปทั้งหมด
+	// ถ้ามี picture_urls → ลบของเก่าแล้วเพิ่มใหม่
 	if req.PictureURLs != nil {
-		if err := replaceAccommodationPictures(item.ID, *req.PictureURLs); err != nil {
-			c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to update pictures: " + err.Error()})
-			return
+		config.DB().Where("owner_type = ? AND owner_id = ?", "accommodation", acc.ID).Delete(&entity.Picture{})
+		for _, url := range *req.PictureURLs {
+			pic := entity.Picture{
+				Url:       url,
+				OwnerType: "accommodation",
+				OwnerID:   acc.ID,
+			}
+			config.DB().Create(&pic)
 		}
 	}
 
-	// โหลดพร้อม relations
-	if err := config.DB().
-		Preload("Province").
-		Preload("District").
-		Preload("Subdistrict").
-		Preload("Pictures").
-		First(&item, id).Error; err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "reload failed"})
-		return
-	}
-
-	c.JSON(http.StatusOK, gin.H{"data": item, "message": "Accommodation updated successfully"})
+	c.JSON(http.StatusOK, gin.H{"data": acc, "message": "updated"})
 }
 
-// DELETE /accommodation/:id
+// ==================== ลบที่พัก ====================
 func DeleteAccommodationById(c *gin.Context) {
-	var item entity.Accommodation
 	id := c.Param("id")
-	db := config.DB()
-
-	if err := db.Where("id = ?", id).First(&item).Error; err != nil {
-		c.JSON(http.StatusNotFound, gin.H{"error": "accommodation not found"})
+	var acc entity.Accommodation
+	if err := config.DB().First(&acc, id).Error; err != nil {
+		c.JSON(http.StatusNotFound, gin.H{"error": "not found"})
 		return
 	}
 
-	// ลบรูปของที่พักก่อน (กัน orphan)
-	if err := db.Where("accommodation_id = ?", item.ID).
-		Delete(&entity.Picture{}).Error; err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to delete pictures"})
+	// ลบรูปที่เกี่ยวข้อง
+	config.DB().Where("owner_type = ? AND owner_id = ?", "accommodation", acc.ID).Delete(&entity.Picture{})
+
+	if err := config.DB().Delete(&acc).Error; err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "delete failed"})
 		return
 	}
 
-	if err := db.Delete(&item, id).Error; err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to delete accommodation"})
-		return
-	}
-	c.JSON(http.StatusOK, gin.H{"message": "accommodation deleted successfully"})
+	c.JSON(http.StatusOK, gin.H{"message": "deleted"})
 }

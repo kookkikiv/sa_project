@@ -13,7 +13,7 @@ type Member struct {
 	Last_Name  string `gorm:"not null" json:"last_name"`
 	BirthDay time.Time `gorm:"not null" json:"birth_day"`
 	Tel string `gorm:"not null" json:"phonenumber"`
-	GuideApplication []GuideApplication `gorm:"foreignKey:User_ID"`
+	GuideApplication []GuideApplication `gorm:"foreignKey:MemberID"`
 	//Booking []Booking `gorm:"foreignKey:UserID"`
 	//Cart []Cart `gorm:"foreignKey:UserID"`
 	//Review []Review `gorm:"foreignKey:User_ID"`

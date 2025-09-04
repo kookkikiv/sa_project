@@ -11,7 +11,7 @@ type ServiceArea struct {
 	DistrictID uint      `gorm:"not null;index;uniqueIndex:uniq_area_type" json:"district_id"`
 	District   District  `gorm:"constraint:OnUpdate:CASCADE,OnDelete:RESTRICT;"`
 
-	TypeID     uint      `gorm:"not null;index;uniqueIndex:uniq_area_type" json:"type_id"`
+	GuideTypeID     uint      `gorm:"not null;index;uniqueIndex:uniq_area_type" json:"guidetype_id"`
 	GuideType  GuideType `gorm:"constraint:OnUpdate:CASCADE,OnDelete:RESTRICT;"`
 
 	Status     string    `gorm:"not null;default:needed" json:"status"` // needed|full|closed

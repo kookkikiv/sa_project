@@ -11,8 +11,8 @@ type Guide struct {
 	gorm.Model
 	GuideSatatus string  `json:"guid_satatus"`
 
-	UserID *uint
-	Member_User Member `gorm:"foreignKey:UserID;references:ID"`
+	MemberID *uint
+	Member Member `gorm:"foreignKey:MemberID;references:ID"`
 
 	GuideApplicationID *uint
 	GuideApplication GuideApplication `gorm:"foreignKey:GuideApplicationID;references:ID"`

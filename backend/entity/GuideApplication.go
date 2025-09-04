@@ -8,8 +8,8 @@ import (
 
 type GuideApplication struct {
 	gorm.Model
-	UserID        uint        `gorm:"not null" json:"user_id"`
-	Member        *Member     `gorm:"foreignKey:UserID"`
+	MemberID        uint        `gorm:"not null" json:"member_id"`
+	Member        *Member     `gorm:"foreignKey:MemberID"`
 
 	FirstName     string      `gorm:"not null" json:"first_name"`
 	LastName      string      `gorm:"not null" json:"last_name"`
@@ -22,7 +22,7 @@ type GuideApplication struct {
 
 	ServiceAreaID uint        `gorm:"not null;index" json:"service_area_id"`
 	ServiceArea   ServiceArea `gorm:"constraint:OnUpdate:CASCADE,OnDelete:RESTRICT;"`
+    Documents []DocumentPath `json:"documents" gorm:"constraint:OnUpdate:CASCADE,OnDelete:CASCADE;"`
 
-	DocumentsPath string      `gorm:"not null" json:"documents_path"`
 	SubmittedAt   time.Time   `gorm:"autoCreateTime" json:"submitted_at"` // เซ็ตให้อัตโนมัติ
 }

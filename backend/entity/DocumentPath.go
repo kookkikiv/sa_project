@@ -7,9 +7,11 @@ import (
 type DocumentPath struct {
 	gorm.Model
 	DocumentPath string `gorm:"not null"`
-	UserID *uint
-	Member Member `gorm:"foreignKey:UserID"`
+	MemberID *uint
+	Member Member `gorm:"foreignKey:MemberID"`
 
-	GuideApplication GuideApplication `gorm:"foreignKey:DocumentPathID"`
+	GuideApplicationID uint             `json:"guide_application_id" gorm:"not null;index"`
+	GuideApplication   *GuideApplication `gorm:"constraint:OnUpdate:CASCADE,OnDelete:CASCADE;"`
+
 
 }

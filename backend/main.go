@@ -16,6 +16,12 @@ func main() {
 	r := gin.Default()
 	r.Use(CORSMiddleware())
 
+	// ✅ เสิร์ฟไฟล์อัปโหลด (ประกาศครั้งเดียวพอ และวางก่อน api group)
+	r.Static("/uploads", "./uploads")
+
+	// ✅ รองรับ FE เดิมที่เรียก POST /upload (legacy)
+	r.POST("/upload", controller.UploadPictures)
+
 	// health check
 	r.GET("/health", func(c *gin.Context) {
 		c.JSON(200, gin.H{"status": "ok"})
@@ -49,7 +55,7 @@ func main() {
 			admin.DELETE("/:id", controller.DeleteAdminById)
 		}
 
-		// Accommodation (CRUD ล้วน)
+		// Accommodation
 		acc := api.Group("/accommodation")
 		{
 			acc.GET("", controller.FindAccommodation)
@@ -59,7 +65,7 @@ func main() {
 			acc.DELETE("/:id", controller.DeleteAccommodationById)
 		}
 
-		// Package (คงไว้ตามโปรเจกต์ของคุณ)
+		// Package
 		pkg := api.Group("/package")
 		{
 			pkg.GET("", controller.FindPackage)
@@ -81,7 +87,7 @@ func main() {
 			g.DELETE("/:id", controller.DeleteGuideById)
 		}
 
-		// Room (CRUD ล้วน — ตัด /stats, /search ออกให้เรียบง่าย)
+		// Room
 		room := api.Group("/room")
 		{
 			room.GET("", controller.FindRoom)
@@ -91,7 +97,7 @@ func main() {
 			room.DELETE("/:id", controller.DeleteRoomById)
 		}
 
-		// Facility (CRUD ล้วน — ตัด stats/search/types + assign/unassign ออก)
+		// Facility
 		fac := api.Group("/facility")
 		{
 			fac.GET("", controller.FindFacility)
@@ -109,10 +115,17 @@ func main() {
 			th.POST("/clear-data", controller.ClearThailandData)
 		}
 
-		
+		// Pictures API (ใหม่)
+		pics := api.Group("/pictures")
+		{
+			pics.POST("/upload", controller.UploadPictures)
+			//pics.POST("/attach", controller.AttachExistingPictures)
+			//pics.GET("", controller.ListPicturesByOwner)
+			//pics.DELETE("/:id", controller.DeletePicture)
+		}
 	}
 
-	// ---------- Legacy routes (คงไว้สำหรับ FE เดิม) ----------
+	// ---------- Legacy routes (ถ้ายังต้องใช้) ----------
 	r.GET("/province", controller.FindProvinces)
 	r.GET("/district", controller.FindDistricts)
 	r.GET("/subdistrict", controller.FindSubdistricts)
@@ -152,12 +165,10 @@ func main() {
 	r.PUT("/facility/:id", controller.UpdateFacilityById)
 	r.DELETE("/facility/:id", controller.DeleteFacilityById)
 
-	// Thailand legacy
-	r.POST("/import-thailand-all", controller.ImportThailandAll)
-
 	// run
-	r.Run("localhost:" + PORT)
+	r.Run(":" + PORT) // แนะนำแบบนี้
 }
+
 
 // CORS
 func CORSMiddleware() gin.HandlerFunc {

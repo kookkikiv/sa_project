@@ -26,7 +26,7 @@ import {
 
 // ====== ตั้งค่าอัปโหลดรูป (แก้ให้ตรง backend ของคุณ) ======
 const API_BASE_URL = import.meta.env.VITE_API_URL || "http://localhost:8000";
-const API_UPLOAD_ENDPOINT = `${API_BASE_URL}/upload`; // ต้องมีที่ backend (ตอบ {url: "..."} หรือ {data:{url:"..."}})
+const API_UPLOAD_ENDPOINT = `${API_BASE_URL}/api/v1/pictures/upload`;
 const getAuthHeaderOnly = () => {
   const token = localStorage.getItem("token");
   const tokenType = localStorage.getItem("token_type");
@@ -422,21 +422,45 @@ export default function AccommodationCreate() {
 
               {/* 1) อัปโหลดไฟล์ไปเซิร์ฟเวอร์เพื่อรับ URL */}
               <Upload.Dragger
+                name="file"
                 multiple
                 listType="picture-card"
-                fileList={fileList}
-                customRequest={handleUploadRequest}
+                action={API_UPLOAD_ENDPOINT}
+                // ส่ง owner ให้ BE บันทึก pictures ให้เลย (ใส่ owner_id จริงของที่พักถ้ามี)
+                data={{ owner_type: "accommodation", owner_id: 1 }}
+                headers={{ ...getAuthHeaderOnly() }}
                 beforeUpload={beforeUpload}
-                onChange={({ fileList: fl }) => setFileList(fl)}
-                onRemove={onRemoveFile}
-                accept="image/png,image/jpeg,image/webp,image/gif"
-              >
-                <p className="ant-upload-drag-icon">
-                  <InboxOutlined />
-                </p>
-                <p className="ant-upload-text">ลากไฟล์มาวาง หรือคลิกเพื่อเลือกไฟล์รูป</p>
-                <p className="ant-upload-hint">รองรับ jpg, png, webp, gif ขนาดไม่เกิน 5MB</p>
-              </Upload.Dragger>
+                fileList={fileList}
+                onChange={({ file, fileList: fl }) => {
+                  setFileList(fl);
+                    if (file.status === "done") {
+                      const url =
+                        file.response?.url ||
+                        file.response?.data?.url ||
+                        (Array.isArray(file.response?.urls) ? file.response.urls[0] : undefined);
+                      if (url) {
+                        setPictureUrls((prev) => (prev.includes(url) ? prev : [...prev, url]));
+                        messageApi.success("อัปโหลดรูปสำเร็จ");
+                      } else {
+                        messageApi.warning("อัปโหลดสำเร็จแต่ไม่พบ URL ที่ส่งกลับ");
+                        // ดูค่า response ได้จาก console นี้เวลา debug
+                        console.debug("upload response:", file.response);
+                      }
+                    } else if (file.status === "error") {
+                        messageApi.error("อัปโหลดรูปไม่สำเร็จ");
+                        console.error("upload error:", file.error || file.response);
+                    }
+              }}
+              onRemove={onRemoveFile}
+              accept="image/png,image/jpeg,image/webp,image/gif"
+            >
+              <p className="ant-upload-drag-icon">
+                <InboxOutlined />
+              </p>
+              <p className="ant-upload-text">ลากไฟล์มาวาง หรือคลิกเพื่อเลือกไฟล์รูป</p>
+             <p className="ant-upload-hint">รองรับ jpg, png, webp, gif ขนาดไม่เกิน 5MB</p>
+            </Upload.Dragger>
+
 
               {/* 2) เพิ่มจากลิงก์รูปเอง */}
               <Row gutter={8} style={{ marginTop: 12 }}>
