@@ -18,4 +18,5 @@ type Room struct {
 
 	// relations อื่น ๆ ค่อยตามทีหลังได้
 	Facilities []Facility `gorm:"many2many:room_facility"`
+	Picture		 []Picture	  `gorm:"polymorphic:Owner;"`
 }

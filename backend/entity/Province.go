@@ -12,6 +12,6 @@ type Province struct{
 
     Districts      []District      `gorm:"foreignKey:ProvinceID;constraint:OnUpdate:CASCADE,OnDelete:RESTRICT;"`
     Accommodations []Accommodation `gorm:"foreignKey:ProvinceID"`
-    Events         []Event         `gorm:"foreignKey:ProvinceID"`  // ใช้ ProvinceID แทน province_id
+    Events         []Event         `gorm:"foreignKey:ProvinceID"`  
     Packages       []Package       `gorm:"foreignKey:ProvinceID"`
 }

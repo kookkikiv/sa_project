@@ -28,6 +28,7 @@ type Package struct {
 
 	Accommodation []Accommodation `gorm:"many2many:accommodation_package"`
 	Event []Event `gorm:"many2many:event_package"`
+	Picture		 []Picture	  `gorm:"polymorphic:Owner;"`
 
 	// ความสัมพันธ์ที่พัก/ห้อง (ใหม่)
     Stays []PackageStay `gorm:"foreignKey:PackageID;constraint:OnUpdate:CASCADE,OnDelete:CASCADE;" json:"stays,omitempty"`

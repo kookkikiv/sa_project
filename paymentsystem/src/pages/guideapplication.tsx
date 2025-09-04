@@ -280,19 +280,7 @@ const GuideRegistration: React.FC = () => {
                       rules={[{ required: true, message: "Please select a Province" }]}
                     >
                       <Select placeholder="Select Province">
-                        allowClear
-                        showSearch
-                        loading={loadingProvince}
-                        options={toOptions(provinces)}
-                        optionFilterProp="label"
-                        onChange={(value?: number) => {
-                    // รีเซ็ตอำเภอ/ตำบลทุกครั้งที่เปลี่ยนจังหวัด
-                        setSelectedProvince(value ?? null);
-                        setSelectedDistrict(null);
-                        form.setFieldsValue({ DistrictID: undefined });
-                        if (typeof value === "number") void fetchDistricts(value);
-                        else setDistricts([]);
-                  }}
+
                       </Select>
                     </Form.Item>
                   </motion.div>
@@ -363,3 +351,4 @@ const GuideRegistration: React.FC = () => {
 };
 
 export default GuideRegistration;
+}

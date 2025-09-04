@@ -22,4 +22,5 @@ type Accommodation struct {
 	Rooms        []Room       `gorm:"foreignKey:AccommodationID"`
 	Facilities   []Facility   `gorm:"many2many:accommodation_facility"`
 	Packages     []Package    `gorm:"many2many:accommodation_package"`
+	Picture		 []Picture	  `gorm:"polymorphic:Owner;"`
 }

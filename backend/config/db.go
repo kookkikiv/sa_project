@@ -41,14 +41,14 @@ func SetupDatabase() {
 		&entity.GuideType{},
 		&entity.GuideApplication{},
 		&entity.Language{},
-
 		&entity.Accommodation{},
 		&entity.Room{},
 		&entity.Facility{},
-
 		&entity.Package{},
 		&entity.PackageStay{}, 
 		&entity.Event{},
+		&entity.Picture{},
+		&entity.DocumentPath{},
 	); err != nil {
 		panic(err)
 	}
