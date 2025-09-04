@@ -427,7 +427,6 @@ export default function AccommodationCreate() {
                 listType="picture-card"
                 action={API_UPLOAD_ENDPOINT}
                 // ส่ง owner ให้ BE บันทึก pictures ให้เลย (ใส่ owner_id จริงของที่พักถ้ามี)
-                data={{ owner_type: "accommodation", owner_id: 1 }}
                 headers={{ ...getAuthHeaderOnly() }}
                 beforeUpload={beforeUpload}
                 fileList={fileList}
@@ -435,8 +434,7 @@ export default function AccommodationCreate() {
                   setFileList(fl);
                     if (file.status === "done") {
                       const url =
-                        file.response?.url ||
-                        file.response?.data?.url ||
+                        (file.response && (file.response.url || file.response.data?.url)) ??
                         (Array.isArray(file.response?.urls) ? file.response.urls[0] : undefined);
                       if (url) {
                         setPictureUrls((prev) => (prev.includes(url) ? prev : [...prev, url]));
@@ -451,9 +449,15 @@ export default function AccommodationCreate() {
                         console.error("upload error:", file.error || file.response);
                     }
               }}
-              onRemove={onRemoveFile}
+              onRemove={(file) => {
+                const url =
+                  (file.url as string) || (file.response?.url as string) || (file.response?.data?.url as string);
+                if (url) setPictureUrls (prev => prev.filter(u => u ! ==url))
+                return true;
+              }}
               accept="image/png,image/jpeg,image/webp,image/gif"
             >
+            
               <p className="ant-upload-drag-icon">
                 <InboxOutlined />
               </p>

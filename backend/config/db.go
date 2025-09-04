@@ -15,18 +15,27 @@ var db *gorm.DB
 func DB() *gorm.DB { return db }
 
 func ConnectionDB() {
-	database, err := gorm.Open(sqlite.Open("project2.db?cache=shared"), &gorm.Config{})
-	if err != nil {
-		fmt.Printf("Failed to connect to database: %v\n", err)
-		panic(err)
-	}
-	db = database
+    database, err := gorm.Open(sqlite.Open("project2.db"), &gorm.Config{})
+    if err != nil {
+        panic("failed to connect database")
+    }
+    db = database
 
-	// เปิด foreign keys สำหรับ SQLite
-	db.Exec("PRAGMA foreign_keys = ON;")
+    // เปิด foreign keys
+    db.Exec("PRAGMA foreign_keys = ON;")
 
-	fmt.Println("Connected to database successfully")
+    // เปิด WAL mode ช่วยเรื่อง concurrent read/write
+    db.Exec("PRAGMA journal_mode = WAL;")
+    db.Exec("PRAGMA synchronous = NORMAL;")
+
+    // ปรับ connection pool (SQLite เหมาะกับ 1 connection เท่านั้น)
+    sqlDB, _ := db.DB()
+    sqlDB.SetMaxOpenConns(1)
+    sqlDB.SetMaxIdleConns(1)
+
+    fmt.Println("✅ Connected to database (SQLite)")
 }
+
 
 func SetupDatabase() {
 	// ลำดับที่อ้าง FK ไปหาตารางที่มาก่อน
