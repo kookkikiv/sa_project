@@ -18,8 +18,4 @@ type Location struct {
 	Item []Item `gorm:"foreignKey:LocationID"`
 	Accommodation []Accommodation  `gorm:"foreignKey:LocationID"`
 	ItemLocation []ItemLocation `gorm:"foreignKey:LocationID"`
-
-
-
-
 }

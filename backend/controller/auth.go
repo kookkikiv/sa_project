@@ -13,8 +13,8 @@ import (
 )
 
 type SignInRequest struct {
-	Email    string `json:"email" binding:"required"`
-	Password string `json:"password" binding:"required"`
+	Email    string `json:"Email" binding:"required"`
+	Password string `json:"Password" binding:"required"`
 }
 
 type SignInResponse struct {
@@ -35,7 +35,7 @@ func SignIn(c *gin.Context) {
 
 	// ค้นหา admin ด้วย email
 	var admin entity.Admin
-	if err := config.DB().Where("email = ?", request.Email).First(&admin).Error; err != nil {
+	if err := config.DB().Where("email= ?", request.Email).First(&admin).Error; err != nil {
 		c.JSON(http.StatusUnauthorized, gin.H{"error": "Invalid email or password"})
 		return
 	}

@@ -10,10 +10,9 @@ function SignInPages() {
   const [messageApi, contextHolder] = message.useMessage();
   
   const onFinish = async (values: any) => {
-    // Transform form values to match backend field names
     const payload: SignInInterface = {
-      Email: values.Email,
-      Password: values.Password,
+      Email: values.email,
+      Password: values.password,
     };
 
     try {
@@ -60,7 +59,7 @@ function SignInPages() {
               >
                 <Form.Item
                   label="Email"
-                  name="Email"  // Fixed: was email
+                  name="email"  
                   rules={[
                     { required: true, message: "กรุณากรอกอีเมล!" },
                     { type: "email", message: "รูปแบบอีเมลไม่ถูกต้อง!" },
@@ -71,7 +70,7 @@ function SignInPages() {
 
                 <Form.Item
                   label="Password"
-                  name="Password"  // Fixed: was password
+                  name="password"  
                   rules={[
                     { required: true, message: "กรุณากรอกรหัสผ่าน!" },
                   ]}

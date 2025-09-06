@@ -23,7 +23,7 @@ const EditFacility = Loadable(lazy(() => import("../pages/Facility/edit")));
 
 const AdminRoutes = (isLoggedIn: boolean): RouteObject => {
   return {
-    path: "*", // แก้ไขจาก "/" เป็น "*"
+    path: "/", 
     element: isLoggedIn ? <FullLayout /> : <MainPages />,
     children: isLoggedIn ? [
       // Default dashboard route

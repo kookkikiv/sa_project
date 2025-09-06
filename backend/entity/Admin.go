@@ -12,7 +12,7 @@ type Admin struct {
     FirstName string    `json:"admin_first_name"`
     LastName  string    `json:"admin_last_name"`
     Email     string    `json:"admin_email"`
-    Password  string    `json:"-"`
+    Password  string    `json:"password"`
     BirthDay  time.Time `json:"admin_birthday"`
     Tel 		string		`json:"admin_tel"`
 
