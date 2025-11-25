@@ -17,9 +17,7 @@ export default tseslint.config([
   {
     files: ['**/*.{ts,tsx}'],
     extends: [
-      |B6630485|โยษิตา นันทดิลก | ระบย่อยการจอง |ระบบข่าวสารและกิจกรรม |
-      |B6630485|โยษิตา นันทดิลก | ระบย่อยการจอง |ระบบข่าวสารและกิจกรรม|
-      |B6630485|โยษิตา นันทดิลก | ระบย่อยการจอง |ระบบข่าวสารและกิจกรรม|
+      
     ],
     languageOptions: {
       parserOptions: {
@@ -34,6 +32,9 @@ export default tseslint.config([
 
 You can also install [eslint-plugin-react-x](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-x) and [eslint-plugin-react-dom](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-dom) for React-specific lint rules:
 
+|B6630485|โยษิตา นันทดิลก | ระบย่อยการจอง |ระบบข่าวสารและกิจกรรม |
+      |B6630485|โยษิตา นันทดิลก | ระบย่อยการจอง |ระบบข่าวสารและกิจกรรม|
+      |B6630485|โยษิตา นันทดิลก | ระบย่อยการจอง |ระบบข่าวสารและกิจกรรม|
 ```js
 // eslint.config.js
 import reactX from 'eslint-plugin-react-x'
