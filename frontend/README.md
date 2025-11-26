@@ -8,7 +8,7 @@ Currently, two official plugins are available:
 - [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/) for Fast Refresh
 
 ## Expanding the ESLint configuration
-| รหัสนักศึกษา | ชื่อ-สกุล           | ระบบย่อย        | ระบบหลัก               |
+| รหัสนักศึกษา | ชื่อ-สกุล           | ระบบย่อย        | ระบบหลั              |
 |--------------|----------------------|------------------|------------------------|
 | B6630485     | โยษิตา นันทดิลก     | ระบบย่อยการจอ  | ระบบข่าวสารและกิจกรรม |
 | B6630485     | โยษิตา นันทดิลก     | ระบบย่อยการจอง  | ระบบข่าวสารและกิจกรรม |
