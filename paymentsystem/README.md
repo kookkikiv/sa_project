@@ -8,6 +8,13 @@ Currently, two official plugins are available:
 - [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/) for Fast Refresh
 
 ## Expanding the ESLint configuration
+### ข้อมูลผู้พัฒนา
+
+| รหัสนักศึกษา | ชื่อ-สกุล           | ระบบย่อย        | ระบบหลัก               |
+|--------------|----------------------|------------------|------------------------|
+| B6630485     | โยษิตา นันทดิลก     | ระบบย่อยการจอง  | ระบบข่าวสารและกิจกรรม |
+| B6630485     | โยษิตา นันทดิลก     | ระบบย่อยการจอง  | ระบบข่าวสารและกิจกรรม |
+| B6630485     | โยษิตา นันทดิลก     | ระบบย่อยการจอง  | ระบบข่าวสารและกิจกรรม |
 
 If you are developing a production application, we recommend updating the configuration to enable type-aware lint rules:
 
@@ -32,9 +39,7 @@ export default tseslint.config([
 
 You can also install [eslint-plugin-react-x](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-x) and [eslint-plugin-react-dom](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-dom) for React-specific lint rules:
 
-      B6630485โยษิตา นันทดิลก | ระบย่อยการจอง |ระบบข่าวสารและกิจกรรม 
-      B6630485โยษิตา นันทดิลก | ระบย่อยการจอง |ระบบข่าวสารและกิจกรรม
-      B6630485โยษิตา นันทดิลก | ระบย่อยการจอง |ระบบข่าวสารและกิจกรรม
+
 ```js
 // eslint.config.js
 import reactX from 'eslint-plugin-react-x'
